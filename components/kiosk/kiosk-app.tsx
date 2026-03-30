@@ -540,8 +540,27 @@ export function KioskApp({ mode }: KioskAppProps) {
     );
   }
 
-  if (!data || !selectedUser) {
+  if (!data) {
     return null;
+  }
+
+  if (!selectedUser) {
+    return (
+      <div className="app-surface flex min-h-screen items-center justify-center p-6">
+        <div className="glass-panel-strong max-w-xl rounded-[2rem] p-8 text-center">
+          <h1 className="text-3xl font-semibold">Profiller bulunamadi</h1>
+          <p className="mt-3 text-[color:var(--text-muted)]">
+            Kullanici listesi bos. Supabase senkronizasyonunu yenileyip tekrar dene.
+          </p>
+          <button
+            onClick={() => void loadDashboard()}
+            className="mt-5 rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white"
+          >
+            Tekrar dene
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const themeClass = data.family?.theme === "koyu" ? "theme-koyu" : "";

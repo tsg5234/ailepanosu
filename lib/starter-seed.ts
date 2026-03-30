@@ -111,6 +111,7 @@ async function seedStarterData() {
   }
 
   if (existingFamily) {
+    await restoreStarterUsersForFamily(existingFamily.id);
     return;
   }
 
@@ -196,5 +197,58 @@ async function seedStarterData() {
 
   if (rewardsError) {
     fail("Starter rewards could not be created", rewardsError);
+  }
+}
+
+async function restoreStarterUsersForFamily(familyId: string) {
+  const supabase = createAdminClient();
+
+  const [{ data: users, error: usersError }, { data: tasks, error: tasksError }] =
+    await Promise.all([
+      supabase.from("users").select("id").eq("family_id", familyId),
+      supabase.from("tasks").select("assigned_to").eq("family_id", familyId)
+    ]);
+
+  if (usersError) {
+    fail("Starter user restore check failed", usersError);
+  }
+
+  if (tasksError) {
+    fail("Starter task restore check failed", tasksError);
+  }
+
+  const existingUserIds = new Set((users ?? []).map((user) => user.id as string));
+  const assignedUserIds = new Set(
+    (tasks ?? []).flatMap((task) => ((task.assigned_to as string[] | null) ?? []))
+  );
+
+  const missingUsers =
+    existingUserIds.size === 0
+      ? [...STARTER_USERS]
+      : STARTER_USERS.filter(
+          (user) => assignedUserIds.has(user.id) && !existingUserIds.has(user.id)
+        );
+
+  if (missingUsers.length === 0) {
+    return;
+  }
+
+  const { error: restoreUsersError } = await supabase.from("users").upsert(
+    missingUsers.map((user) => ({
+      id: user.id,
+      family_id: familyId,
+      name: user.name,
+      role: user.role,
+      avatar: user.avatar,
+      color: user.color,
+      birthdate: user.birthdate
+    })),
+    {
+      onConflict: "id"
+    }
+  );
+
+  if (restoreUsersError) {
+    fail("Starter users could not be restored", restoreUsersError);
   }
 }
