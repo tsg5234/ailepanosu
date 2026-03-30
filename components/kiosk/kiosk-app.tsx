@@ -43,7 +43,6 @@ interface KioskAppProps {
 }
 
 type KidScreen = "profiles" | "tasks";
-type TimeTestOverride = ActiveTimeBlock | null;
 
 interface UtilityButtonProps {
   icon: ComponentType<{ className?: string }>;
@@ -63,21 +62,6 @@ interface EmptyTaskState {
   copy: string;
   nextLabel?: string;
 }
-
-const TIME_TEST_OPTIONS: Array<{ label: string; value: TimeTestOverride }> = [
-  { label: "Gercek", value: null },
-  { label: "Sabah", value: "sabah" },
-  { label: "Oglen", value: "ogleden_sonra" },
-  { label: "Aksam", value: "aksam" },
-  { label: "Gece", value: "gece" }
-];
-
-const TIME_TEST_CLOCK_LABELS: Record<ActiveTimeBlock, string> = {
-  sabah: "08:30",
-  ogleden_sonra: "14:00",
-  aksam: "19:30",
-  gece: "22:30"
-};
 
 async function setupRequest(payload: {
   familyName: string;
@@ -362,7 +346,6 @@ function getActiveDayPartMeta(timeBlock: ActiveTimeBlock) {
 export function KioskApp({ mode }: KioskAppProps) {
   const [screen, setScreen] = useState<KidScreen>("profiles");
   const [clockNow, setClockNow] = useState<Date | null>(null);
-  const [timeTestOverride, setTimeTestOverride] = useState<TimeTestOverride>(null);
   const {
     data,
     activeProfileId,
@@ -468,7 +451,7 @@ export function KioskApp({ mode }: KioskAppProps) {
         : "sabah",
     [data, referenceNow, selectedUser?.role]
   );
-  const currentDayPart = timeTestOverride ?? realCurrentDayPart;
+  const currentDayPart = realCurrentDayPart;
 
   const allTodayTasks = useMemo(() => {
     if (!data || !selectedUser) {
@@ -560,12 +543,7 @@ export function KioskApp({ mode }: KioskAppProps) {
   const themeClass = data.family?.theme === "koyu" ? "theme-koyu" : "";
   const selectedTheme = getProfileTheme(selectedUser.color);
   const dayPart = getActiveDayPartMeta(currentDayPart);
-  const digitalClock =
-    timeTestOverride !== null
-      ? TIME_TEST_CLOCK_LABELS[timeTestOverride]
-      : clockNow
-        ? getDigitalTimeLabel(clockNow)
-        : null;
+  const digitalClock = clockNow ? getDigitalTimeLabel(clockNow) : null;
   const dashboardThemeStyle = {
     "--active-primary": selectedTheme.primary,
     "--active-secondary": selectedTheme.secondary,
@@ -674,41 +652,6 @@ export function KioskApp({ mode }: KioskAppProps) {
           <UtilityButton key={button.label} {...button} />
         ))}
       </div>
-
-      {screen === "tasks" ? (
-        <div className="fixed left-3 top-1/2 z-[60] -translate-y-1/2 lg:left-5">
-          <div className="glass-panel-strong flex flex-col gap-2 rounded-[1.8rem] p-3 shadow-[0_22px_54px_rgba(15,23,42,0.18)]">
-            <div className="px-2 text-[0.68rem] font-black uppercase tracking-[0.22em] text-[color:var(--text-muted)]">
-              Test Saati
-            </div>
-            {TIME_TEST_OPTIONS.map((option) => {
-              const active = option.value === timeTestOverride;
-
-              return (
-                <button
-                  key={option.label}
-                  type="button"
-                  onClick={() => setTimeTestOverride(option.value)}
-                  className={`min-w-[5.6rem] rounded-[1rem] px-3 py-2 text-sm font-black transition-all ${
-                    active
-                      ? "text-white shadow-[0_14px_28px_var(--active-glow)]"
-                      : "bg-white/72 text-[color:var(--text-main)] hover:bg-white"
-                  }`}
-                  style={
-                    active
-                      ? {
-                          backgroundImage: `linear-gradient(150deg, ${selectedTheme.primary} 0%, ${selectedTheme.secondary} 70%, ${selectedTheme.accent} 145%)`
-                        }
-                      : undefined
-                  }
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
 
       <AnimatePresence initial={false} mode="wait">
         {screen === "profiles" ? (
