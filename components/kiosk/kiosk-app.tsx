@@ -451,6 +451,10 @@ export function KioskApp({ mode }: KioskAppProps) {
         : "sabah",
     [data, referenceNow, selectedUser?.role]
   );
+  const familyCurrentDayPart = useMemo(
+    () => (data ? getActiveTimeBlock(referenceNow, data.family, "ebeveyn") : "sabah"),
+    [data, referenceNow]
+  );
   const currentDayPart = realCurrentDayPart;
 
   const allTodayTasks = useMemo(() => {
@@ -542,7 +546,7 @@ export function KioskApp({ mode }: KioskAppProps) {
 
   const themeClass = data.family?.theme === "koyu" ? "theme-koyu" : "";
   const selectedTheme = getProfileTheme(selectedUser.color);
-  const dayPart = getActiveDayPartMeta(currentDayPart);
+  const dayPart = getActiveDayPartMeta(familyCurrentDayPart);
   const digitalClock = clockNow ? getDigitalTimeLabel(clockNow) : null;
   const dashboardThemeStyle = {
     "--active-primary": selectedTheme.primary,
