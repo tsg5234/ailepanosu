@@ -43,6 +43,7 @@ import type {
 } from "@/lib/types";
 
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,24}$/;
+const CHILD_ROLE = "çocuk";
 const ACCOUNT_USER_PREFIX = "__account__:";
 const ACCOUNT_PENDING_COLOR = "#0F172A";
 const ACCOUNT_READY_COLOR = "#1D4ED8";
@@ -122,6 +123,23 @@ function isAccountUserRecord(user: Pick<UserRecord, "name"> | Pick<AccountUserRe
 
 function isAccountSetupComplete(user: Pick<AccountUserRecord, "color">) {
   return user.color === ACCOUNT_READY_COLOR;
+}
+
+function normalizeUserRole(role: string): UserRecord["role"] {
+  return role === "ebeveyn" ? "ebeveyn" : CHILD_ROLE;
+}
+
+function getChildRoleCandidates() {
+  const onceMangled = Buffer.from(CHILD_ROLE, "utf8").toString("latin1");
+  const twiceMangled = Buffer.from(onceMangled, "utf8").toString("latin1");
+  return Array.from(new Set([CHILD_ROLE, onceMangled, twiceMangled, "cocuk"]));
+}
+
+function normalizeUserRecord(user: UserRecord): UserRecord {
+  return {
+    ...user,
+    role: normalizeUserRole(user.role)
+  };
 }
 
 function toAuthAccount(user: AccountUserRecord, username: string): AuthAccount {
@@ -261,6 +279,99 @@ async function updateAccountUser(
   if (error) {
     fail("Hesap bilgisi guncellenemedi", error);
   }
+}
+
+async function insertProfileUser(
+  familyId: string,
+  profile: {
+    name: string;
+    role: UserRecord["role"];
+    avatar: string;
+    color: string;
+    birthdate: string | null;
+  }
+) {
+  const supabase = createAdminClient();
+  const base = {
+    family_id: familyId,
+    name: profile.name,
+    avatar: profile.avatar,
+    color: profile.color,
+    birthdate: profile.birthdate
+  };
+
+  if (profile.role === "ebeveyn") {
+    const { data, error } = await supabase
+      .from("users")
+      .insert({ ...base, role: "ebeveyn" })
+      .select("*")
+      .single();
+
+    if (error) {
+      fail("Kullanicilar olusturulamadi", error);
+    }
+
+    return normalizeUserRecord(data as UserRecord);
+  }
+
+  let lastError: unknown = null;
+
+  for (const roleCandidate of getChildRoleCandidates()) {
+    const { data, error } = await supabase
+      .from("users")
+      .insert({ ...base, role: roleCandidate })
+      .select("*")
+      .single();
+
+    if (!error && data) {
+      return normalizeUserRecord(data as UserRecord);
+    }
+
+    lastError = error;
+  }
+
+  fail("Kullanicilar olusturulamadi", lastError);
+}
+
+async function updateProfileUser(
+  familyId: string,
+  userId: string,
+  profile: {
+    name: string;
+    role: UserRecord["role"];
+    avatar: string;
+    color: string;
+    birthdate: string | null;
+  }
+) {
+  const supabase = createAdminClient();
+  const base = {
+    family_id: familyId,
+    name: profile.name,
+    avatar: profile.avatar,
+    color: profile.color,
+    birthdate: profile.birthdate
+  };
+
+  const roleCandidates =
+    profile.role === "ebeveyn" ? ["ebeveyn"] : getChildRoleCandidates();
+  let lastError: unknown = null;
+
+  for (const roleCandidate of roleCandidates) {
+    const { error } = await supabase
+      .from("users")
+      .update({ ...base, role: roleCandidate })
+      .eq("id", userId)
+      .eq("family_id", familyId);
+
+    if (!error) {
+      return;
+    }
+
+    lastError = error;
+  }
+
+  fail("Kullanici guncellenemedi", lastError);
 }
 
 async function ensureFamilyRecordExists(
@@ -434,30 +545,23 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     fail("Aile olusturulamadi", familyError);
   }
 
-  const { data: insertedUsers, error: usersError } = await supabase
-    .from("users")
-    .insert(
-      sanitizedProfiles.map((profile) => ({
-        family_id: familyId,
+  const insertedUsers = await Promise.all(
+    sanitizedProfiles.map((profile) =>
+      insertProfileUser(familyId, {
         name: profile.name,
-        role: profile.role,
+        role: normalizeUserRole(profile.role),
         avatar: profile.avatar,
         color: profile.color,
         birthdate: profile.birthdate
-      }))
+      })
     )
-    .select("*");
-
-  if (usersError) {
-    fail("Kullanicilar olusturulamadi", usersError);
-  }
+  );
 
   if (payload.includeSampleData) {
-    const users = (insertedUsers ?? []) as UserRecord[];
-    const childIds = users
-      .filter((user) => user.role === "\u00e7ocuk")
+    const childIds = insertedUsers
+      .filter((user) => user.role === CHILD_ROLE)
       .map((user) => user.id);
-    const assignedUserIds = childIds.length > 0 ? childIds : users.map((user) => user.id);
+    const assignedUserIds = childIds.length > 0 ? childIds : insertedUsers.map((user) => user.id);
 
     const { error: tasksError } = await supabase.from("tasks").insert(
       SAMPLE_TASK_TEMPLATES.map((task) => ({
@@ -599,9 +703,9 @@ export async function getDashboardSnapshot(
     fail("Puan gecmisi alinamadi", eventsResult.error);
   }
 
-  const visibleUsers = ((usersResult.data ?? []) as UserRecord[]).filter(
-    (user) => !isAccountUserRecord(user)
-  );
+  const visibleUsers = ((usersResult.data ?? []) as UserRecord[])
+    .filter((user) => !isAccountUserRecord(user))
+    .map(normalizeUserRecord);
 
   if (visibleUsers.length === 0) {
     return buildSetupRequiredSnapshot(session, null);
@@ -673,14 +777,6 @@ export async function saveUser(familyId: string, payload: UserFormPayload) {
   }
 
   const supabase = createAdminClient();
-  const base = {
-    family_id: familyId,
-    name: payload.name,
-    role: payload.role,
-    avatar: payload.avatar,
-    color: payload.color,
-    birthdate: payload.birthdate || null
-  };
 
   if (payload.id) {
     const { data: existing, error: existingError } = await supabase
@@ -702,24 +798,24 @@ export async function saveUser(familyId: string, payload: UserFormPayload) {
       throw new Error("Bu profil duzenlenemez.");
     }
 
-    const { error } = await supabase
-      .from("users")
-      .update(base)
-      .eq("id", payload.id)
-      .eq("family_id", familyId);
-
-    if (error) {
-      fail("Kullanici guncellenemedi", error);
-    }
+    await updateProfileUser(familyId, payload.id, {
+      name: payload.name,
+      role: normalizeUserRole(payload.role),
+      avatar: payload.avatar,
+      color: payload.color,
+      birthdate: payload.birthdate || null
+    });
 
     return;
   }
 
-  const { error } = await supabase.from("users").insert(base);
-
-  if (error) {
-    fail("Kullanici olusturulamadi", error);
-  }
+  await insertProfileUser(familyId, {
+    name: payload.name,
+    role: normalizeUserRole(payload.role),
+    avatar: payload.avatar,
+    color: payload.color,
+    birthdate: payload.birthdate || null
+  });
 }
 
 export async function saveTask(familyId: string, payload: TaskFormPayload) {
