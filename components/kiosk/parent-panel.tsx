@@ -6,7 +6,7 @@ import { CheckCircle2, Gift, Settings2, ShieldCheck, Star, Users } from "lucide-
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
-import { TIME_BLOCK_LABELS, WEEKDAY_LABELS } from "@/lib/schedule";
+import { TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type { DashboardPayload, RewardFormPayload, TaskFormPayload, UserFormPayload } from "@/lib/types";
 
@@ -95,6 +95,16 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function toWeekText(days: string[]) {
   return days.map((day) => WEEKDAY_LABELS[day as keyof typeof WEEKDAY_LABELS] ?? day).join(", ");
+}
+
+const WEEKDAY_PRESETS = [
+  { id: "her-gun", label: "Her gün", days: [...WEEKDAY_KEYS] },
+  { id: "hafta-ici", label: "Hafta içi", days: WEEKDAY_KEYS.filter((day) => day !== "cts" && day !== "paz") },
+  { id: "hafta-sonu", label: "Hafta sonu", days: ["cts", "paz"] }
+] as const;
+
+function hasSameDays(left: string[], right: readonly string[]) {
+  return WEEKDAY_KEYS.every((key) => left.includes(key) === right.includes(key));
 }
 
 export function ParentPanel(props: ParentPanelProps) {
@@ -391,26 +401,45 @@ export function ParentPanel(props: ParentPanelProps) {
             </label>
           </div>
           {taskDraft.scheduleType === "haftalik" ? (
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(WEEKDAY_LABELS).map(([key, label]) => {
-                const active = taskDraft.days.includes(key);
-                return (
-                  <button
-                    key={key}
-                    onClick={() =>
-                      setTaskDraft((current) => ({
-                        ...current,
-                        days: active ? current.days.filter((day) => day !== key) : [...current.days, key]
-                      }))
-                    }
-                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                      active ? "bg-teal-600 text-white" : "bg-white ring-1 ring-slate-200"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_PRESETS.map((preset) => {
+                  const active = hasSameDays(taskDraft.days, preset.days);
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => setTaskDraft((current) => ({ ...current, days: [...preset.days] }))}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_KEYS.map((key) => {
+                  const label = WEEKDAY_LABELS[key];
+                  const active = taskDraft.days.includes(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() =>
+                        setTaskDraft((current) => ({
+                          ...current,
+                          days: active ? current.days.filter((day) => day !== key) : [...current.days, key]
+                        }))
+                      }
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        active ? "bg-teal-600 text-white" : "bg-white ring-1 ring-slate-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ) : null}
           {taskDraft.scheduleType === "ozel" ? (
