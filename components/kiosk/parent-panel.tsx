@@ -182,7 +182,7 @@ export function ParentPanel(props: ParentPanelProps) {
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 md:items-end">
             <label className="block space-y-2">
               <Label>Rol</Label>
               <select
@@ -203,7 +203,7 @@ export function ParentPanel(props: ParentPanelProps) {
                         : event.target.value !== "ebeveyn"
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               >
                 <option value="çocuk">Çocuk</option>
                 <option value="ebeveyn">Admin</option>
@@ -215,20 +215,20 @@ export function ParentPanel(props: ParentPanelProps) {
                 type="date"
                 value={userDraft.birthdate ?? ""}
                 onChange={(event) => setUserDraft((current) => ({ ...current, birthdate: event.target.value }))}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               />
             </label>
           </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
-            <AvatarPicker
-              compact
-              role={userDraft.role}
-              value={userDraft.avatar}
-              onChange={(avatar) => setUserDraft((current) => ({ ...current, avatar }))}
-            />
+          <AvatarPicker
+            compact
+            role={userDraft.role}
+            value={userDraft.avatar}
+            onChange={(avatar) => setUserDraft((current) => ({ ...current, avatar }))}
+          />
+          <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
             <label className="block space-y-2">
               <Label>Renk</Label>
-              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2">
+              <div className="flex h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2">
                 <input
                   type="color"
                   value={userDraft.color}
@@ -238,26 +238,26 @@ export function ParentPanel(props: ParentPanelProps) {
                 <span className="font-medium">{userDraft.color}</span>
               </div>
             </label>
-          </div>
-          <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
-            <div>
-              <div className="font-semibold">Kioskta goster</div>
-              <div className="text-sm text-[color:var(--text-muted)]">
-                Kapaliysa profil ana secim ekraninda gorunmez.
+            <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
+              <div>
+                <div className="font-semibold">Kioskta goster</div>
+                <div className="text-sm text-[color:var(--text-muted)]">
+                  Kapaliysa profil ana secim ekraninda gorunmez.
+                </div>
               </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={userDraft.visible_in_kiosk !== false}
-              onChange={(event) =>
-                setUserDraft((current) => ({
-                  ...current,
-                  visible_in_kiosk: event.target.checked
-                }))
-              }
-              className="h-5 w-5"
-            />
-          </label>
+              <input
+                type="checkbox"
+                checked={userDraft.visible_in_kiosk !== false}
+                onChange={(event) =>
+                  setUserDraft((current) => ({
+                    ...current,
+                    visible_in_kiosk: event.target.checked
+                  }))
+                }
+                className="h-5 w-5"
+              />
+            </label>
+          </div>
           <div className="flex gap-3">
             <button
               onClick={() => onSaveUser(userDraft)}
