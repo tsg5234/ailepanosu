@@ -921,8 +921,8 @@ export function KioskApp({ mode }: KioskAppProps) {
                       <div className="pointer-events-none absolute -right-6 top-0 h-32 w-32 rounded-full bg-white/16 blur-2xl" />
                       <div className="pointer-events-none absolute bottom-[-2rem] left-[-2rem] h-32 w-32 rounded-full bg-black/10 blur-2xl" />
                       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/85 to-transparent" />
-                      <div className="relative">
-                        <div className="flex items-start justify-between gap-3">
+                      <div className="kid-profile-card-body relative">
+                        <div className="kid-profile-card-top flex items-start gap-3">
                           <div className="kid-profile-avatar overflow-hidden text-[3.8rem]">
                             <AvatarDisplay avatar={user.avatar} name={user.name} />
                           </div>
