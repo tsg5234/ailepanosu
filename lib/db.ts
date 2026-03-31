@@ -914,13 +914,13 @@ export async function toggleTaskCompletion(
   const [{ data: task, error: taskError }, { data: user, error: userError }] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id")
+      .select("id, points")
       .eq("id", taskId)
       .eq("family_id", familyId)
       .maybeSingle(),
     supabase
       .from("users")
-      .select("id, name")
+      .select("id, name, points")
       .eq("id", userId)
       .eq("family_id", familyId)
       .maybeSingle()
@@ -936,6 +936,62 @@ export async function toggleTaskCompletion(
 
   if (!task || !user || isAccountMarkerName(user.name)) {
     throw new Error("Bu islem bu hesaba ait olmayan bir kayit iceriyor.");
+  }
+
+  const { data: existingCompletion, error: completionLookupError } = await supabase
+    .from("completions")
+    .select("id, points_earned")
+    .eq("family_id", familyId)
+    .eq("task_id", taskId)
+    .eq("user_id", userId)
+    .eq("completion_date", dateKey)
+    .maybeSingle();
+
+  if (completionLookupError) {
+    fail("Gorev kaydi kontrol edilemedi", completionLookupError);
+  }
+
+  if (existingCompletion) {
+    const nextPoints = user.points - existingCompletion.points_earned;
+    const [deleteResult, userUpdateResult, eventInsertResult] = await Promise.all([
+      supabase
+        .from("completions")
+        .delete()
+        .eq("id", existingCompletion.id)
+        .eq("family_id", familyId),
+      supabase
+        .from("users")
+        .update({ points: nextPoints })
+        .eq("id", userId)
+        .eq("family_id", familyId),
+      supabase.from("point_events").insert({
+        family_id: familyId,
+        user_id: userId,
+        delta: -existingCompletion.points_earned,
+        source: "gorev",
+        task_id: taskId,
+        reward_id: null,
+        note: "Gorev geri alindi"
+      })
+    ]);
+
+    if (deleteResult.error) {
+      fail("Tamamlanan gorev geri alinamadi", deleteResult.error);
+    }
+
+    if (userUpdateResult.error) {
+      fail("Kullanici puani geri alinamadi", userUpdateResult.error);
+    }
+
+    if (eventInsertResult.error) {
+      fail("Gorev gecmisi guncellenemedi", eventInsertResult.error);
+    }
+
+    return {
+      completed: false,
+      points_change: -existingCompletion.points_earned,
+      total_points: nextPoints
+    };
   }
 
   const { data, error } = await supabase.rpc("toggle_task_completion", {
