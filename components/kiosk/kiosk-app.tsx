@@ -446,6 +446,17 @@ export function KioskApp({ mode }: KioskAppProps) {
 
   const allUsers = useMemo(() => data?.users ?? [], [data?.users]);
   const profileUsers = useMemo(() => allUsers, [allUsers]);
+  const profileGridColumns = useMemo(
+    () => Math.min(Math.max(profileUsers.length, 1), 5),
+    [profileUsers.length]
+  );
+  const profileGridStyle = useMemo(
+    () =>
+      ({
+        "--kid-profile-columns": String(profileGridColumns)
+      }) as CSSProperties,
+    [profileGridColumns]
+  );
   const referenceNow = useMemo(() => clockNow ?? new Date(), [clockNow]);
 
   const selectedUser = useMemo(() => {
@@ -878,7 +889,11 @@ export function KioskApp({ mode }: KioskAppProps) {
                 </div>
               </div>
 
-              <div className="kid-profile-grid relative mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div
+                className="kid-profile-grid relative mt-8 grid gap-4"
+                data-profile-count={profileGridColumns}
+                style={profileGridStyle}
+              >
                 {profileUsers.map((user, index) => {
                   const userTheme = getProfileTheme(user.color);
                   const roleLabel = user.role === "ebeveyn" ? "Ebeveyn" : "Cocuk";
@@ -914,11 +929,11 @@ export function KioskApp({ mode }: KioskAppProps) {
                           <div className="kid-profile-score">
                             <div className="flex items-center justify-center gap-2 text-amber-200">
                               <Star className="h-5 w-5 fill-amber-200" />
-                              <span className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-white/82">
+                              <span className="kid-profile-score-label text-[0.7rem] font-black uppercase tracking-[0.2em] text-white/82">
                                 Puan
                               </span>
                             </div>
-                            <div className="mt-2 text-[2.15rem] font-black tracking-[-0.06em] leading-none text-white">
+                            <div className="kid-profile-score-value mt-2 text-[2.15rem] font-black tracking-[-0.06em] leading-none text-white">
                               {user.points}
                             </div>
                           </div>
