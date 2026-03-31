@@ -181,7 +181,7 @@ export function ParentPanel(props: ParentPanelProps) {
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
-          <div className="grid gap-4 md:grid-cols-2 md:max-xl:items-start xl:items-end">
+          <div className="grid gap-4 xl:grid-cols-2 xl:items-end">
             <label className="block space-y-2">
               <Label>Rol</Label>
               <select
@@ -210,7 +210,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 type="date"
                 value={userDraft.birthdate ?? ""}
                 onChange={(event) => setUserDraft((current) => ({ ...current, birthdate: event.target.value }))}
-                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 md:max-xl:[&::-webkit-datetime-edit]:flex md:max-xl:[&::-webkit-datetime-edit]:items-center md:max-xl:[&::-webkit-datetime-edit]:leading-none md:max-xl:[&::-webkit-date-and-time-value]:min-h-[1.25rem]"
+                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               />
             </label>
           </div>
