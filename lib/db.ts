@@ -366,7 +366,13 @@ export async function verifyParentPin(pin: string) {
     throw new Error("PIN hatali.");
   }
 
-  return toPublicFamilyRecord(family);
+  const publicFamily = toPublicFamilyRecord(family);
+
+  if (!publicFamily) {
+    throw new Error("Aile bilgisi alinamadi.");
+  }
+
+  return publicFamily;
 }
 
 export async function saveUser(familyId: string, payload: UserFormPayload) {
