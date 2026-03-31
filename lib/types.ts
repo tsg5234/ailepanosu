@@ -116,8 +116,14 @@ export interface DashboardPayload {
 
 export interface SetupPayload {
   familyName: string;
-  parentName: string;
   pin: string;
+  profiles: Array<{
+    name: string;
+    role: UserRole;
+    avatar: string;
+    color: string;
+    birthdate?: string | null;
+  }>;
   includeSampleData: boolean;
 }
 

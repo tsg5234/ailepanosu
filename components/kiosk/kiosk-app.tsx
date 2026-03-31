@@ -37,7 +37,7 @@ import {
   getTasksForUserOnDate,
   isTaskCompleted
 } from "@/lib/schedule";
-import type { ActiveTimeBlock, TaskRecord, TimeBlock } from "@/lib/types";
+import type { ActiveTimeBlock, SetupPayload, TaskRecord, TimeBlock } from "@/lib/types";
 import { useDashboardStore } from "@/stores/use-dashboard-store";
 
 interface KioskAppProps {
@@ -65,12 +65,7 @@ interface EmptyTaskState {
   nextLabel?: string;
 }
 
-async function setupRequest(payload: {
-  familyName: string;
-  parentName: string;
-  pin: string;
-  includeSampleData: boolean;
-}) {
+async function setupRequest(payload: SetupPayload) {
   const response = await fetch("/api/setup", {
     method: "POST",
     headers: {

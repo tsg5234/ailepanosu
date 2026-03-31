@@ -7,9 +7,28 @@ export async function POST(request: Request) {
   try {
     const session = await requireAccountSession();
     const body = (await request.json()) as SetupPayload;
+    const profiles = Array.isArray(body.profiles)
+      ? body.profiles
+          .map((profile) => ({
+            name: profile.name?.trim() ?? "",
+            role: profile.role,
+            avatar: profile.avatar?.trim() ?? "",
+            color: profile.color?.trim() ?? "",
+            birthdate: profile.birthdate?.trim() || null
+          }))
+          .filter((profile) => profile.name && profile.avatar && profile.color)
+      : [];
 
-    if (!body.familyName?.trim() || !body.parentName?.trim() || !body.pin?.trim()) {
-      return jsonError("Aile adi, ebeveyn adi ve PIN gerekli.");
+    if (!body.familyName?.trim() || !body.pin?.trim()) {
+      return jsonError("Aile adi ve PIN gerekli.");
+    }
+
+    if (profiles.length === 0) {
+      return jsonError("En az bir profil ekleyin.");
+    }
+
+    if (!profiles.some((profile) => profile.role === "ebeveyn")) {
+      return jsonError("En az bir ebeveyn profili gerekli.");
     }
 
     if (body.pin.trim().length < 4) {
@@ -26,8 +45,8 @@ export async function POST(request: Request) {
       },
       {
         familyName: body.familyName.trim(),
-        parentName: body.parentName.trim(),
         pin: body.pin.trim(),
+        profiles,
         includeSampleData: Boolean(body.includeSampleData)
       }
     );

@@ -44,7 +44,8 @@ import type {
 
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,24}$/;
 const ACCOUNT_USER_PREFIX = "__account__:";
-const ACCOUNT_USER_COLOR = "#0F172A";
+const ACCOUNT_PENDING_COLOR = "#0F172A";
+const ACCOUNT_READY_COLOR = "#1D4ED8";
 const ACCOUNT_PLACEHOLDER_FAMILY_NAME = "Kurulum bekliyor";
 
 interface InternalFamilyRecord extends FamilyRecord {
@@ -56,6 +57,7 @@ interface AccountUserRecord {
   family_id: string;
   name: string;
   avatar: string;
+  color: string;
 }
 
 interface AuthAccount {
@@ -105,6 +107,10 @@ function isAccountMarkerName(name: string) {
 
 function isAccountUserRecord(user: Pick<UserRecord, "name"> | Pick<AccountUserRecord, "name">) {
   return isAccountMarkerName(user.name);
+}
+
+function isAccountSetupComplete(user: Pick<AccountUserRecord, "color">) {
+  return user.color === ACCOUNT_READY_COLOR;
 }
 
 function toAuthAccount(user: AccountUserRecord, username: string): AuthAccount {
@@ -187,8 +193,23 @@ async function getAccountUserByUsername(username: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id, family_id, name, avatar")
+    .select("id, family_id, name, avatar, color")
     .eq("name", getAccountMarkerName(username))
+    .maybeSingle();
+
+  if (error) {
+    fail("Hesap bilgisi alinamadi", error);
+  }
+
+  return (data as AccountUserRecord | null) ?? null;
+}
+
+async function getAccountUserById(accountId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, family_id, name, avatar, color")
+    .eq("id", accountId)
     .maybeSingle();
 
   if (error) {
@@ -216,32 +237,19 @@ async function createPlaceholderFamily() {
   return data.id as string;
 }
 
-async function findClaimableFamilyId() {
+async function updateAccountUser(
+  accountId: string,
+  payload: Partial<{
+    family_id: string;
+    color: string;
+  }>
+) {
   const supabase = createAdminClient();
-  const [familiesResult, usersResult] = await Promise.all([
-    supabase.from("families").select("id").order("created_at"),
-    supabase.from("users").select("family_id, name").eq("role", "ebeveyn")
-  ]);
+  const { error } = await supabase.from("users").update(payload).eq("id", accountId);
 
-  if (familiesResult.error) {
-    fail("Aile listesi alinamadi", familiesResult.error);
+  if (error) {
+    fail("Hesap bilgisi guncellenemedi", error);
   }
-
-  if (usersResult.error) {
-    fail("Hesap sahipligi kontrol edilemedi", usersResult.error);
-  }
-
-  const linkedFamilyIds = new Set(
-    (usersResult.data ?? [])
-      .filter((user) => typeof user.family_id === "string" && isAccountMarkerName(user.name))
-      .map((user) => user.family_id as string)
-  );
-
-  const unclaimedFamilyIds = (familiesResult.data ?? [])
-    .map((family) => family.id as string)
-    .filter((familyId) => !linkedFamilyIds.has(familyId));
-
-  return unclaimedFamilyIds.length === 1 ? unclaimedFamilyIds[0] : null;
 }
 
 async function ensureFamilyRecordExists(
@@ -277,7 +285,7 @@ export async function registerAccount(payload: AccountAuthPayload) {
     throw new Error("Bu kullanici adi zaten kullaniliyor.");
   }
 
-  const familyId = (await findClaimableFamilyId()) ?? (await createPlaceholderFamily());
+  const familyId = await createPlaceholderFamily();
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("users")
@@ -286,9 +294,9 @@ export async function registerAccount(payload: AccountAuthPayload) {
       name: getAccountMarkerName(username),
       role: "ebeveyn",
       avatar: await bcrypt.hash(password, 10),
-      color: ACCOUNT_USER_COLOR
+      color: ACCOUNT_PENDING_COLOR
     })
-    .select("id, family_id, name, avatar")
+    .select("id, family_id, name, avatar, color")
     .single();
 
   if (error) {
@@ -358,15 +366,49 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     return bootstrapLocalApp(account.accountId, payload);
   }
 
-  if (!account.familyId) {
-    throw new Error("Aile kaydi bulunamadi.");
+  const accountUser = await getAccountUserById(account.accountId);
+
+  if (!accountUser || !isAccountUserRecord(accountUser)) {
+    throw new Error("Hesap bulunamadi.");
   }
 
-  if (await hasVisibleUsers(account.familyId)) {
+  if (isAccountSetupComplete(accountUser)) {
     throw new Error("Kurulum zaten tamamlandi.");
   }
 
   const supabase = createAdminClient();
+  const sanitizedProfiles = payload.profiles.map((profile) => ({
+    name: profile.name.trim(),
+    role: profile.role,
+    avatar: profile.avatar.trim(),
+    color: profile.color.trim(),
+    birthdate: profile.birthdate || null
+  }));
+
+  if (sanitizedProfiles.length === 0) {
+    throw new Error("En az bir profil gerekli.");
+  }
+
+  let familyId = accountUser.family_id || account.familyId;
+
+  if (!familyId) {
+    familyId = await createPlaceholderFamily();
+    await updateAccountUser(account.accountId, { family_id: familyId });
+  }
+
+  const [familyInternal, familyHasVisibleUsers] = await Promise.all([
+    getFamilyInternal(familyId),
+    hasVisibleUsers(familyId)
+  ]);
+
+  if (
+    familyHasVisibleUsers ||
+    (familyInternal && familyInternal.name !== ACCOUNT_PLACEHOLDER_FAMILY_NAME)
+  ) {
+    familyId = await createPlaceholderFamily();
+    await updateAccountUser(account.accountId, { family_id: familyId });
+  }
+
   const parentPinHash = await bcrypt.hash(payload.pin, 10);
 
   const { error: familyError } = await supabase
@@ -375,7 +417,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
       name: payload.familyName,
       parent_pin_hash: parentPinHash
     })
-    .eq("id", account.familyId);
+    .eq("id", familyId);
 
   if (familyError) {
     fail("Aile olusturulamadi", familyError);
@@ -383,42 +425,16 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
 
   const { data: insertedUsers, error: usersError } = await supabase
     .from("users")
-    .insert([
-      {
-        family_id: account.familyId,
-        name: payload.parentName,
-        role: "ebeveyn",
-        avatar: "\u{1F468}",
-        color: "#2DD4BF"
-      },
-      ...(payload.includeSampleData
-        ? [
-            {
-              family_id: account.familyId,
-              name: "Esra",
-              role: "ebeveyn",
-              avatar: "\u{1F469}",
-              color: "#FB7185"
-            },
-            {
-              family_id: account.familyId,
-              name: "Poyraz",
-              role: "\u00e7ocuk",
-              avatar: "\u{1F981}",
-              color: "#60A5FA",
-              birthdate: "2016-05-14"
-            },
-            {
-              family_id: account.familyId,
-              name: "Aden",
-              role: "\u00e7ocuk",
-              avatar: "\u{1F984}",
-              color: "#22C55E",
-              birthdate: "2019-09-02"
-            }
-          ]
-        : [])
-    ])
+    .insert(
+      sanitizedProfiles.map((profile) => ({
+        family_id: familyId,
+        name: profile.name,
+        role: profile.role,
+        avatar: profile.avatar,
+        color: profile.color,
+        birthdate: profile.birthdate
+      }))
+    )
     .select("*");
 
   if (usersError) {
@@ -434,7 +450,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
 
     const { error: tasksError } = await supabase.from("tasks").insert(
       SAMPLE_TASK_TEMPLATES.map((task) => ({
-        family_id: account.familyId,
+        family_id: familyId,
         title: task.title,
         icon: task.icon,
         points: task.points,
@@ -452,13 +468,13 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
 
     const { error: rewardsError } = await supabase.from("rewards").insert([
       {
-        family_id: account.familyId,
+        family_id: familyId,
         title: "Film gecesi secimi",
         points_required: 120,
         approval_required: false
       },
       {
-        family_id: account.familyId,
+        family_id: familyId,
         title: "Hafta sonu dondurma",
         points_required: 180,
         approval_required: true
@@ -470,8 +486,13 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     }
   }
 
+  await updateAccountUser(account.accountId, {
+    family_id: familyId,
+    color: ACCOUNT_READY_COLOR
+  });
+
   return {
-    familyId: account.familyId
+    familyId
   };
 }
 
@@ -490,6 +511,16 @@ export async function getDashboardSnapshot(
 
   if (!session.familyId) {
     return getEmptyDashboardSnapshot(session);
+  }
+
+  const accountUser = await getAccountUserById(session.accountId);
+
+  if (!accountUser || !isAccountUserRecord(accountUser)) {
+    return getEmptyDashboardSnapshot(null);
+  }
+
+  if (!isAccountSetupComplete(accountUser)) {
+    return buildSetupRequiredSnapshot(session, null);
   }
 
   const familyInternal = await getFamilyInternal(session.familyId);

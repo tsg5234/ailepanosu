@@ -233,11 +233,19 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
 
   const createdAt = nowIso();
   const familyId = randomUUID();
-  const parentUserId = randomUUID();
-  const sampleParentId = randomUUID();
-  const childOneId = randomUUID();
-  const childTwoId = randomUUID();
-  const sampleChildIds = [childOneId, childTwoId];
+  const users = payload.profiles.map((profile) => ({
+    id: randomUUID(),
+    family_id: familyId,
+    name: profile.name.trim(),
+    role: profile.role,
+    avatar: profile.avatar.trim(),
+    color: profile.color.trim(),
+    birthdate: profile.birthdate || null,
+    points: 0,
+    created_at: createdAt
+  }));
+  const childIds = users.filter((user) => user.role === "\u00e7ocuk").map((user) => user.id);
+  const assignedUserIds = childIds.length > 0 ? childIds : users.map((user) => user.id);
 
   state.families[familyId] = {
     family: {
@@ -251,57 +259,8 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
       created_at: createdAt,
       parent_pin_hash: hashSync(payload.pin, 10)
     },
-    users: [
-      {
-        id: parentUserId,
-        family_id: familyId,
-        name: payload.parentName,
-        role: "ebeveyn",
-        avatar: "\u{1F468}",
-        color: "#2DD4BF",
-        birthdate: null,
-        points: 0,
-        created_at: createdAt
-      },
-      ...(payload.includeSampleData
-        ? [
-            {
-              id: sampleParentId,
-              family_id: familyId,
-              name: "Esra",
-              role: "ebeveyn" as const,
-              avatar: "\u{1F469}",
-              color: "#FB7185",
-              birthdate: null,
-              points: 0,
-              created_at: createdAt
-            },
-            {
-              id: childOneId,
-              family_id: familyId,
-              name: "Poyraz",
-              role: "\u00e7ocuk" as const,
-              avatar: "\u{1F981}",
-              color: "#60A5FA",
-              birthdate: "2016-05-14",
-              points: 0,
-              created_at: createdAt
-            },
-            {
-              id: childTwoId,
-              family_id: familyId,
-              name: "Aden",
-              role: "\u00e7ocuk" as const,
-              avatar: "\u{1F984}",
-              color: "#22C55E",
-              birthdate: "2019-09-02",
-              points: 0,
-              created_at: createdAt
-            }
-          ]
-        : [])
-    ],
-    tasks: payload.includeSampleData ? buildSampleTasks(familyId, sampleChildIds, createdAt) : [],
+    users,
+    tasks: payload.includeSampleData ? buildSampleTasks(familyId, assignedUserIds, createdAt) : [],
     completions: [],
     rewards: payload.includeSampleData
       ? [
