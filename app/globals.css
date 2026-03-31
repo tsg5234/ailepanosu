@@ -859,16 +859,18 @@ button {
 
 .kid-task-card {
   display: flex;
-  height: 100%;
+  height: auto;
   flex-direction: column;
-  min-height: 6.9rem;
+  min-height: 5.25rem;
+  padding: 0.62rem 0.78rem;
+  border-radius: 1.45rem;
   box-shadow:
     0 26px 58px rgba(15, 23, 42, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .kid-task-layout {
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .kid-task-main {
@@ -882,27 +884,29 @@ button {
 
 .kid-task-copy-row {
   width: 100%;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .kid-task-icon {
   display: flex;
-  height: 3.4rem;
-  width: 3.4rem;
+  height: 2.85rem;
+  width: 2.85rem;
   align-items: center;
   justify-content: center;
-  border-radius: 1.05rem;
+  border-radius: 0.88rem;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  font-size: 1.95rem;
+  font-size: 1.58rem;
 }
 
 .kid-points-badge {
   display: inline-flex;
-  min-height: 2.35rem;
+  min-height: 1.95rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.48rem 0.72rem;
-  font-size: 0.82rem;
+  padding: 0.34rem 0.58rem;
+  font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: -0.01em;
   box-shadow:
@@ -922,7 +926,7 @@ button {
 .kid-task-title {
   line-height: 0.98;
   text-wrap: balance;
-  font-size: clamp(1.05rem, 0.35vw + 0.98rem, 1.35rem);
+  font-size: clamp(1rem, 0.2vw + 0.98rem, 1.18rem);
 }
 
 .kid-task-action-wrap {
@@ -933,22 +937,22 @@ button {
 .kid-complete-button-inline {
   width: 100%;
   min-width: 0;
-  min-height: 3.5rem;
+  min-height: 2.9rem;
   align-self: stretch;
-  padding: 0.58rem 0.75rem;
-  border-radius: 1.1rem;
+  padding: 0.42rem 0.56rem;
+  border-radius: 0.95rem;
 }
 
 .kid-complete-button-content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.82rem;
+  gap: 0.5rem;
 }
 
 .kid-complete-label {
   white-space: nowrap;
-  font-size: 0.98rem;
+  font-size: 0.84rem;
   font-weight: 900;
   letter-spacing: -0.02em;
 }
@@ -995,26 +999,25 @@ button {
 
   .kid-task-grid-multi {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
   }
 
   .kid-task-card {
     min-height: 0;
-    border-radius: 1.6rem;
-    padding: 0.72rem;
+    border-radius: 1.35rem;
+    padding: 0.58rem 0.68rem;
   }
 
   .kid-task-layout {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 0.7rem;
+    gap: 0.58rem;
   }
 
   .kid-task-main {
     flex-direction: row;
     align-items: center;
-    gap: 0.72rem;
+    gap: 0.62rem;
   }
 
   .kid-task-copy {
@@ -1024,20 +1027,20 @@ button {
   .kid-task-copy-row {
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.55rem;
+    gap: 0.45rem;
   }
 
   .kid-task-icon {
-    width: 3.15rem;
-    height: 3.15rem;
-    border-radius: 0.95rem;
-    font-size: 1.8rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.82rem;
+    font-size: 1.45rem;
   }
 
   .kid-points-badge {
-    min-height: 2.2rem;
-    padding: 0.45rem 0.68rem;
-    font-size: 0.8rem;
+    min-height: 1.9rem;
+    padding: 0.32rem 0.56rem;
+    font-size: 0.72rem;
   }
 
   .kid-complete-button {
@@ -1045,16 +1048,16 @@ button {
   }
 
   .kid-complete-button-inline {
-    width: 3.3rem;
-    min-width: 3.3rem;
-    min-height: 3.3rem;
-    padding: 0.55rem;
-    border-radius: 0.95rem;
+    width: 2.85rem;
+    min-width: 2.85rem;
+    min-height: 2.85rem;
+    padding: 0.38rem;
+    border-radius: 0.88rem;
   }
 
   .kid-complete-glyph {
-    width: 2rem;
-    height: 2rem;
+    width: 1.7rem;
+    height: 1.7rem;
   }
 
   .kid-tasks-empty-state {
@@ -1081,41 +1084,41 @@ button {
   }
 
   .kid-task-card {
-    padding: 0.68rem 0.72rem;
+    padding: 0.54rem 0.62rem;
   }
 
   .kid-task-icon {
-    width: 2.85rem;
-    height: 2.85rem;
-    border-radius: 0.85rem;
-    font-size: 1.55rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.78rem;
+    font-size: 1.38rem;
   }
 
   .kid-points-badge {
-    min-height: 2rem;
-    padding: 0.36rem 0.62rem;
-    font-size: 0.76rem;
+    min-height: 1.8rem;
+    padding: 0.28rem 0.52rem;
+    font-size: 0.7rem;
   }
 
   .kid-complete-button-inline {
-    min-height: 3rem;
-    width: 3rem;
-    min-width: 3rem;
+    min-height: 2.6rem;
+    width: 2.6rem;
+    min-width: 2.6rem;
   }
 
   .kid-complete-glyph {
-    width: 1.8rem;
-    height: 1.8rem;
+    width: 1.5rem;
+    height: 1.5rem;
   }
 
   .kid-complete-label {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
   }
 }
 
 @media (min-width: 1280px) {
   .kid-task-layout {
-    gap: 0.9rem;
+    gap: 0.7rem;
   }
 
   .kid-task-action-wrap {
@@ -1124,11 +1127,11 @@ button {
   }
 
   .kid-complete-button-inline {
-    width: 3.35rem;
-    min-width: 3.35rem;
-    min-height: 3.35rem;
+    width: 2.95rem;
+    min-width: 2.95rem;
+    min-height: 2.95rem;
     align-self: center;
-    padding: 0.5rem;
+    padding: 0.38rem;
   }
 
   .kid-complete-label {
@@ -1319,40 +1322,41 @@ button {
   }
 
   .kid-task-card {
-    border-radius: 2rem;
-    padding: 1rem;
+    min-height: 5rem;
+    border-radius: 1.45rem;
+    padding: 0.58rem 0.68rem;
   }
 
   .kid-task-icon {
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1.3rem;
-    font-size: 2.2rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.82rem;
+    font-size: 1.48rem;
   }
 
   .kid-task-title {
-    font-size: clamp(1.45rem, 3vw, 1.9rem);
+    font-size: clamp(1.02rem, 1.2vw, 1.22rem);
   }
 
   .kid-points-badge {
-    min-height: 2.55rem;
-    padding: 0.62rem 0.84rem;
-    font-size: 0.88rem;
+    min-height: 1.95rem;
+    padding: 0.34rem 0.58rem;
+    font-size: 0.74rem;
   }
 
   .kid-complete-button-inline {
-    min-height: 4rem;
-    padding: 0.8rem 0.95rem;
-    border-radius: 1.3rem;
+    min-height: 2.9rem;
+    padding: 0.4rem 0.54rem;
+    border-radius: 0.95rem;
   }
 
   .kid-complete-glyph {
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .kid-complete-label {
-    font-size: 0.92rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -1554,21 +1558,22 @@ button {
   }
 
   .kid-task-card {
-    border-radius: 1.7rem;
-    padding: 0.85rem;
+    min-height: 5rem;
+    border-radius: 1.35rem;
+    padding: 0.56rem 0.66rem;
   }
 
   .kid-task-layout {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 0.8rem;
+    gap: 0.58rem;
   }
 
   .kid-task-main {
     flex-direction: row;
     align-items: center;
-    gap: 0.8rem;
+    gap: 0.62rem;
   }
 
   .kid-task-copy {
@@ -1579,25 +1584,25 @@ button {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.65rem;
+    gap: 0.45rem;
   }
 
   .kid-task-icon {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 1.05rem;
-    font-size: 1.95rem;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 0.82rem;
+    font-size: 1.48rem;
   }
 
   .kid-task-title {
-    font-size: clamp(1.2rem, 2vw, 1.6rem);
-    line-height: 0.95;
+    font-size: clamp(1.02rem, 1.2vw, 1.24rem);
+    line-height: 0.98;
   }
 
   .kid-points-badge {
-    min-height: 2.3rem;
-    padding: 0.52rem 0.72rem;
-    font-size: 0.82rem;
+    min-height: 1.95rem;
+    padding: 0.34rem 0.58rem;
+    font-size: 0.74rem;
   }
 
   .kid-task-action-wrap {
@@ -1606,12 +1611,12 @@ button {
   }
 
   .kid-complete-button-inline {
-    width: 4rem;
-    min-width: 4rem;
-    min-height: 4rem;
+    width: 2.9rem;
+    min-width: 2.9rem;
+    min-height: 2.9rem;
     align-self: center;
-    padding: 0.7rem;
-    border-radius: 1.15rem;
+    padding: 0.4rem;
+    border-radius: 0.9rem;
   }
 
   .kid-complete-button-content {
@@ -1623,8 +1628,8 @@ button {
   }
 
   .kid-complete-glyph {
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .kid-tasks-empty-state {
@@ -1642,8 +1647,8 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
   color: #0f8f70;
