@@ -595,7 +595,7 @@ export function KioskApp({ mode }: KioskAppProps) {
             <p className="mt-3 text-[color:var(--text-muted)]">
               {allUsers.length === 0
                 ? "Kullanici listesi bos. Supabase senkronizasyonunu yenileyip tekrar dene."
-                : "Tum profiller kiosk disi birakilmis. Ebeveyn panelinden en az bir profili gorunur yapabilirsin."}
+                : "Tum profiller kiosk disi birakilmis. Yonetim panelinden en az bir profili gorunur yapabilirsin."}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               {data.session.parentAuthenticated && quickRestoreUser ? (
@@ -614,7 +614,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                   className="rounded-[1.4rem] bg-emerald-600 px-5 py-3 font-semibold text-white"
                 >
                   {quickRestoreUser.role === "ebeveyn"
-                    ? "Admin profilini goster"
+                    ? "Ebeveyn profilini goster"
                     : "Bir profili goster"}
                 </button>
               ) : null}
@@ -630,7 +630,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                   }}
                   className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white"
                 >
-                  {data.session.parentAuthenticated ? "Yonetimi ac" : "Ebeveyn girisi"}
+                  {data.session.parentAuthenticated ? "Yonetimi ac" : "Yonetim girisi"}
                 </button>
               ) : null}
               <button
@@ -762,7 +762,7 @@ export function KioskApp({ mode }: KioskAppProps) {
     },
     {
       icon: data.session.parentAuthenticated ? PanelRightOpen : Lock,
-      label: data.session.parentAuthenticated ? "Yonetim" : "Ebeveyn",
+      label: data.session.parentAuthenticated ? "Yonetim" : "Yonetim",
       onClick: () => {
         if (data.session.parentAuthenticated) {
           openAdmin();
@@ -856,7 +856,7 @@ export function KioskApp({ mode }: KioskAppProps) {
               <div className="kid-profile-grid relative mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {profileUsers.map((user, index) => {
                   const userTheme = getProfileTheme(user.color);
-                  const roleLabel = user.role === "ebeveyn" ? "Admin" : "Cocuk";
+                  const roleLabel = user.role === "ebeveyn" ? "Ebeveyn" : "Cocuk";
 
                   return (
                     <motion.button

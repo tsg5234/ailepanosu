@@ -30,7 +30,7 @@ function createProfile(role: UserRole): SetupProfileDraft {
     avatar: getDefaultAvatar(role),
     color: role === PARENT_ROLE ? "#2DD4BF" : "#60A5FA",
     birthdate: null,
-    visible_in_kiosk: role !== PARENT_ROLE
+    visible_in_kiosk: true
   };
 }
 
@@ -44,7 +44,7 @@ export function SetupScreen({
   const [familyName, setFamilyName] = useState("");
   const [pin, setPin] = useState("");
   const [includeSampleData, setIncludeSampleData] = useState(false);
-  const [profiles, setProfiles] = useState<SetupProfileDraft[]>([createProfile(PARENT_ROLE)]);
+  const [profiles, setProfiles] = useState<SetupProfileDraft[]>([]);
   const visibleProfileCount = profiles.filter((profile) => profile.visible_in_kiosk !== false).length;
 
   const updateProfile = (
@@ -87,7 +87,7 @@ export function SetupScreen({
                 Aileni hazirla
               </h1>
               <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-                Aile adini yaz, admin PIN&apos;ini belirle ve ilk profillerini ekle.
+                Giris hesabin yonetim icin hazir. Aile adini yaz, PIN&apos;ini belirle ve gorunecek ebeveyn ile cocuk profillerini ekle.
               </p>
             </div>
 
@@ -110,7 +110,7 @@ export function SetupScreen({
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Ebeveyn PIN</span>
+              <span className="text-sm font-semibold text-slate-700">Yonetim PIN</span>
               <input
                 value={pin}
                 onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -138,7 +138,7 @@ export function SetupScreen({
                   className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white"
                 >
                   <Plus className="h-4 w-4" />
-                  Admin ekle
+                  Ebeveyn ekle
                 </button>
                 <button
                   type="button"
@@ -152,6 +152,11 @@ export function SetupScreen({
             </div>
 
             <div className="space-y-3">
+              {profiles.length === 0 ? (
+                <div className="rounded-[1.7rem] border border-dashed border-slate-300 bg-white/80 p-5 text-center text-slate-600">
+                  Once ailende gorunecek bir profil ekle. Istersen ebeveyn, istersen cocuk profiliyle baslayabilirsin.
+                </div>
+              ) : null}
               {profiles.map((profile, index) => (
                 <div
                   key={`${index}-${profile.role}`}
@@ -163,7 +168,7 @@ export function SetupScreen({
                         Profil {index + 1}
                       </div>
                       <div className="text-sm font-semibold text-slate-700">
-                        {profile.role === PARENT_ROLE ? "Admin profili" : "Cocuk profili"}
+                        {profile.role === PARENT_ROLE ? "Ebeveyn profili" : "Cocuk profili"}
                       </div>
                     </div>
 
@@ -174,8 +179,7 @@ export function SetupScreen({
                           current.filter((_, profileIndex) => profileIndex !== index)
                         )
                       }
-                      disabled={profiles.length === 1}
-                      className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700"
                     >
                       <Trash2 className="h-4 w-4" />
                       Kaldir
@@ -245,15 +249,12 @@ export function SetupScreen({
                               role,
                               avatar: normalizeAvatarForRole(role, current.avatar),
                               birthdate: role === PARENT_ROLE ? null : current.birthdate,
-                              visible_in_kiosk:
-                                current.role === role
-                                  ? current.visible_in_kiosk
-                                  : role !== PARENT_ROLE
+                              visible_in_kiosk: current.visible_in_kiosk
                             }));
                           }}
                           className="w-full rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
                         >
-                          <option value={PARENT_ROLE}>Admin</option>
+                          <option value={PARENT_ROLE}>Ebeveyn</option>
                           <option value={CHILD_ROLE}>Cocuk</option>
                         </select>
                       </label>
@@ -264,9 +265,7 @@ export function SetupScreen({
                             Kioskta goster
                           </div>
                           <div className="text-xs leading-5 text-slate-500">
-                            {profile.role === PARENT_ROLE
-                              ? "Admin profili tablette listelensin istiyorsan ac."
-                              : "Bu profil kiosk ana ekraninda gorunsun."}
+                            Bu profil kiosk ana ekraninda gorunsun.
                           </div>
                         </div>
                         <input
@@ -343,10 +342,10 @@ export function SetupScreen({
             />
           </label>
 
-          {visibleProfileCount === 0 ? (
+          {profiles.length > 0 && visibleProfileCount === 0 ? (
             <div className="rounded-[1.5rem] bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
               Kiosk ekraninda su an hic profil gorunmeyecek. Devam edersen once bos ekran acilir;
-              sonra admin girisiyle bir profili gorunur yapabilirsin.
+              sonra PIN girisiyle bir profili gorunur yapabilirsin.
             </div>
           ) : null}
 

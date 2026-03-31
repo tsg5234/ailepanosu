@@ -28,10 +28,6 @@ export async function POST(request: Request) {
       return jsonError("En az bir profil ekleyin.");
     }
 
-    if (!profiles.some((profile) => profile.role === "ebeveyn")) {
-      return jsonError("En az bir ebeveyn profili gerekli.");
-    }
-
     if (body.pin.trim().length < 4) {
       return jsonError("PIN en az 4 haneli olmali.");
     }

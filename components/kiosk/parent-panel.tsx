@@ -156,9 +156,9 @@ export function ParentPanel(props: ParentPanelProps) {
     <div className="flex min-h-0 flex-1 items-center justify-center p-8">
       <div className="glass-panel-strong max-w-xl rounded-[2rem] p-8 text-center">
         <ShieldCheck className="mx-auto h-12 w-12 text-teal-600" />
-        <h2 className="mt-4 text-3xl font-semibold">Ebeveyn girişi gerekli</h2>
+        <h2 className="mt-4 text-3xl font-semibold">Yonetim girisi gerekli</h2>
         <p className="mt-3 text-[color:var(--text-muted)]">
-          Yönetim araçları yalnızca ebeveyn PIN doğrulaması ile açılır.
+          Yonetim araclari yalnizca PIN dogrulamasi ile acilir.
         </p>
         <button
           onClick={onOpenLogin}
@@ -172,7 +172,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
   const usersTab = (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_380px]">
-      <Card title="Profil düzenleyici" description="Admin ve çocuk profillerini buradan yönetin.">
+      <Card title="Profil düzenleyici" description="Ebeveyn ve çocuk profillerini buradan yönetin.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>İsim</Label>
@@ -197,16 +197,13 @@ export function ParentPanel(props: ParentPanelProps) {
                     ),
                     birthdate:
                       event.target.value === "ebeveyn" ? null : current.birthdate,
-                    visible_in_kiosk:
-                      current.role === (event.target.value as UserFormPayload["role"])
-                        ? current.visible_in_kiosk
-                        : event.target.value !== "ebeveyn"
+                    visible_in_kiosk: current.visible_in_kiosk
                   }))
                 }
                 className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               >
                 <option value="çocuk">Çocuk</option>
-                <option value="ebeveyn">Admin</option>
+                <option value="ebeveyn">Ebeveyn</option>
               </select>
             </label>
             <label className="block space-y-2">
@@ -306,7 +303,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 <div>
                   <div className="text-lg font-semibold">{user.name}</div>
                   <div className="text-sm text-[color:var(--text-muted)]">
-                    {user.role === "ebeveyn" ? "admin" : "çocuk"} • {user.points} puan
+                    {user.role === "ebeveyn" ? "Ebeveyn" : "Cocuk"} • {user.points} puan
                     {user.visible_in_kiosk ? " • kioskta gorunur" : " • kioskta gizli"}
                   </div>
                 </div>
@@ -870,7 +867,7 @@ export function ParentPanel(props: ParentPanelProps) {
       <Card title="Tablet notları" description="Kiosk kullanımına yönelik kısa hatırlatmalar.">
         <div className="space-y-3 text-[color:var(--text-muted)]">
           <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli ebeveyn PIN ile korunur.</div>
+          <div className="rounded-[1.5rem] bg-white/80 p-4">Yonetim paneli PIN ile korunur.</div>
           <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sifirla butonu puanlari ve tamamlananlari temizler, kullanicilari silmez.</div>
           <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
         </div>
@@ -894,7 +891,7 @@ export function ParentPanel(props: ParentPanelProps) {
       <div className="flex min-h-0 flex-1 flex-col gap-4 xl:grid xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
         <aside className="glass-panel rounded-[2rem] p-3 lg:p-4 xl:sticky xl:top-0 xl:min-h-0">
           <div className="mb-4 px-2">
-            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Ebeveyn paneli</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yonetim paneli</div>
             <div className="mt-2 text-2xl font-semibold">{data.family?.name}</div>
           </div>
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:mx-0 xl:block xl:space-y-2 xl:overflow-visible xl:px-0 xl:pb-0">
