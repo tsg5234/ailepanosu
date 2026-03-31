@@ -38,9 +38,30 @@ import type {
   UserRecord
 } from "@/lib/types";
 
+interface InternalFamilyRecord extends FamilyRecord {
+  parent_pin_hash: string;
+}
+
 function fail(message: string, error: unknown): never {
   const detail = error instanceof Error ? error.message : "Bilinmeyen hata";
   throw new Error(`${message}: ${detail}`);
+}
+
+function toPublicFamilyRecord(family: InternalFamilyRecord | null): FamilyRecord | null {
+  if (!family) {
+    return null;
+  }
+
+  return {
+    id: family.id,
+    name: family.name,
+    theme: family.theme,
+    audio_enabled: family.audio_enabled,
+    child_sleep_time: family.child_sleep_time,
+    parent_sleep_time: family.parent_sleep_time,
+    day_reset_time: family.day_reset_time,
+    created_at: family.created_at
+  };
 }
 
 async function getFamilyInternal() {
@@ -56,7 +77,7 @@ async function getFamilyInternal() {
     fail("Aile bilgisi alinamadi", error);
   }
 
-  return data as FamilyRecord | null;
+  return data as InternalFamilyRecord | null;
 }
 
 function getEmptyDashboardSnapshot(): DashboardPayload {
@@ -221,8 +242,14 @@ export async function getDashboardSnapshot(): Promise<DashboardPayload> {
 
   await ensureStarterSeeded();
 
-  const family = await getFamilyInternal();
+  const familyInternal = await getFamilyInternal();
   const session = await getParentSession();
+
+  if (!familyInternal) {
+    return getEmptyDashboardSnapshot();
+  }
+
+  const family = toPublicFamilyRecord(familyInternal);
 
   if (!family) {
     return getEmptyDashboardSnapshot();
@@ -339,7 +366,7 @@ export async function verifyParentPin(pin: string) {
     throw new Error("PIN hatali.");
   }
 
-  return family;
+  return toPublicFamilyRecord(family);
 }
 
 export async function saveUser(familyId: string, payload: UserFormPayload) {
