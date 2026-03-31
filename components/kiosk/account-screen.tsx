@@ -167,37 +167,32 @@ export function AccountScreen({
               />
             </label>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-bold text-slate-700">Sifre</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-lg outline-none transition focus:border-sky-400 focus:shadow-[0_0_0_4px_rgba(56,189,248,0.12)]"
-                placeholder="En az 6 karakter"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-              />
-            </label>
-
-            <div className="min-h-[118px]">
-              <label
-                className={`block space-y-2 transition-opacity duration-200 ${
-                  mode === "register" ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
-                aria-hidden={mode !== "register"}
-              >
-                <span className="text-sm font-bold text-slate-700">Sifre tekrar</span>
+            <div className={`grid gap-4 ${mode === "register" ? "md:grid-cols-2" : ""}`}>
+              <label className="block space-y-2">
+                <span className="text-sm font-bold text-slate-700">Sifre</span>
                 <input
                   type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  disabled={mode !== "register"}
-                  tabIndex={mode === "register" ? 0 : -1}
-                  className="w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-lg outline-none transition focus:border-sky-400 focus:shadow-[0_0_0_4px_rgba(56,189,248,0.12)] disabled:cursor-default"
-                  placeholder="Sifreni tekrar yaz"
-                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-lg outline-none transition focus:border-sky-400 focus:shadow-[0_0_0_4px_rgba(56,189,248,0.12)]"
+                  placeholder="En az 6 karakter"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
                 />
               </label>
+
+              {mode === "register" ? (
+                <label className="block space-y-2">
+                  <span className="text-sm font-bold text-slate-700">Sifre tekrar</span>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className="w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 text-lg outline-none transition focus:border-sky-400 focus:shadow-[0_0_0_4px_rgba(56,189,248,0.12)]"
+                    placeholder="Sifreni tekrar yaz"
+                    autoComplete="new-password"
+                  />
+                </label>
+              ) : null}
             </div>
 
             {visibleError ? (
