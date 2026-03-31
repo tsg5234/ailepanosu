@@ -880,10 +880,13 @@ button {
 .kid-task-copy {
   min-width: 0;
   display: flex;
+  align-items: center;
+  min-height: 2.7rem;
 }
 
 .kid-task-copy-row {
   width: 100%;
+  min-height: 2.7rem;
   align-items: center;
   gap: 0.55rem;
 }
@@ -924,6 +927,8 @@ button {
 }
 
 .kid-task-title {
+  display: flex;
+  align-items: center;
   line-height: 0.98;
   text-wrap: balance;
   font-size: clamp(1rem, 0.2vw + 0.98rem, 1.18rem);
