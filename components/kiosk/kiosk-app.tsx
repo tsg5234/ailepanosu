@@ -921,18 +921,18 @@ export function KioskApp({ mode }: KioskAppProps) {
                       <div className="pointer-events-none absolute -right-6 top-0 h-32 w-32 rounded-full bg-white/16 blur-2xl" />
                       <div className="pointer-events-none absolute bottom-[-2rem] left-[-2rem] h-32 w-32 rounded-full bg-black/10 blur-2xl" />
                       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/85 to-transparent" />
-                      <div className="kid-profile-card-body relative">
-                        <div className="kid-profile-score kid-profile-score-floating">
-                          <div className="flex items-center justify-center gap-2 text-amber-200">
-                            <Star className="h-5 w-5 fill-amber-200" />
-                            <span className="kid-profile-score-label text-[0.7rem] font-black uppercase tracking-[0.2em] text-white/82">
-                              Puan
-                            </span>
-                          </div>
-                          <div className="kid-profile-score-value mt-2 text-[2.15rem] font-black tracking-[-0.06em] leading-none text-white">
-                            {user.points}
-                          </div>
+                      <div className="kid-profile-score kid-profile-score-floating">
+                        <div className="flex items-center justify-center gap-2 text-amber-200">
+                          <Star className="h-5 w-5 fill-amber-200" />
+                          <span className="kid-profile-score-label text-[0.7rem] font-black uppercase tracking-[0.2em] text-white/82">
+                            Puan
+                          </span>
                         </div>
+                        <div className="kid-profile-score-value mt-2 text-[2.15rem] font-black tracking-[-0.06em] leading-none text-white">
+                          {user.points}
+                        </div>
+                      </div>
+                      <div className="kid-profile-card-body relative">
                         <div className="kid-profile-card-top flex items-start gap-3">
                           <div className="kid-profile-avatar overflow-hidden text-[3.8rem]">
                             <AvatarDisplay avatar={user.avatar} name={user.name} />

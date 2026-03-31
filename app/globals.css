@@ -445,6 +445,8 @@ button {
   min-height: 17.75rem;
   flex-direction: column;
   justify-content: space-between;
+  appearance: none;
+  -webkit-appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
     0 28px 60px rgba(15, 23, 42, 0.18),
@@ -494,9 +496,6 @@ button {
 }
 
 .kid-profile-score {
-  position: absolute;
-  top: 0;
-  right: 0;
   min-width: 7.25rem;
   border-radius: 1.9rem;
   padding: 0.9rem 0.95rem 0.85rem;
@@ -510,7 +509,10 @@ button {
 }
 
 .kid-profile-score-floating {
-  z-index: 1;
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 2;
 }
 
 .kid-profile-score-label {
@@ -1321,12 +1323,14 @@ button {
   }
 
   .kid-profile-score {
-    position: absolute;
-    top: 0;
-    right: 0;
     min-width: 6rem;
     border-radius: 1.5rem;
     padding: 0.72rem 0.8rem 0.76rem;
+  }
+
+  .kid-profile-score-floating {
+    top: 1.15rem;
+    right: 1.15rem;
   }
 
   .kid-profile-name {
@@ -1551,12 +1555,14 @@ button {
   }
 
   .kid-profile-score {
-    position: absolute;
-    top: 0;
-    right: 0;
     min-width: 5.15rem;
     border-radius: 1.25rem;
     padding: 0.58rem 0.62rem 0.62rem;
+  }
+
+  .kid-profile-score-floating {
+    top: 0.95rem;
+    right: 0.95rem;
   }
 
   .kid-profile-name {
@@ -1732,6 +1738,11 @@ button {
     padding: 0.62rem 0.68rem;
   }
 
+  .kid-profile-grid[data-profile-count="4"] .kid-profile-score-floating {
+    top: 1rem;
+    right: 1rem;
+  }
+
   .kid-profile-grid[data-profile-count="4"] .kid-profile-score-label {
     font-size: 0.6rem;
     letter-spacing: 0.16em;
@@ -1776,6 +1787,11 @@ button {
     min-width: 4.65rem;
     border-radius: 1.1rem;
     padding: 0.46rem 0.5rem 0.5rem;
+  }
+
+  .kid-profile-grid[data-profile-count="5"] .kid-profile-score-floating {
+    top: 0.82rem;
+    right: 0.82rem;
   }
 
   .kid-profile-grid[data-profile-count="5"] .kid-profile-score-label {
