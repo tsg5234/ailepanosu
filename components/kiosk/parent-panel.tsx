@@ -181,7 +181,7 @@ export function ParentPanel(props: ParentPanelProps) {
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
-          <div className="grid gap-4 xl:grid-cols-2 xl:items-end">
+          <div className="grid gap-4 md:grid-cols-2 md:items-end">
             <label className="block space-y-2">
               <Label>Rol</Label>
               <select
