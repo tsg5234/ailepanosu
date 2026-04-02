@@ -196,6 +196,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [pointsNote, setPointsNote] = useState("Bonus puan");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
+  const [showTaskPotentialDetails, setShowTaskPotentialDetails] = useState(false);
 
   useEffect(() => {
     if (!data?.family) {
@@ -757,40 +758,23 @@ export function ParentPanel(props: ParentPanelProps) {
             })}
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--text-muted)]">
-                  Görünen puan
-                </div>
-                <div className="mt-2 text-3xl font-semibold text-slate-950">{visibleTaskPoints} puan</div>
-                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                  {filteredTaskCount} varyasyon • {filteredTaskGroups.length} başlık
-                </div>
+          <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
+                <span className="font-semibold text-slate-950">{visibleTaskPoints} puan görünür</span>
+                <span>{todaysFamilyPotential} puan bugün dağıtılabilir</span>
+                <span>{todaysPotentialByUser.length || 0} profil bugün görev alıyor</span>
               </div>
-
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--text-muted)]">
-                  Bugünkü aile tavanı
-                </div>
-                <div className="mt-2 text-3xl font-semibold text-slate-950">{todaysFamilyPotential} puan</div>
-                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                  {todaysPotentialByUser.length || 0} profil bugün görev alıyor
-                </div>
-              </div>
+              <button
+                onClick={() => setShowTaskPotentialDetails((current) => !current)}
+                className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                {showTaskPotentialDetails ? "Kişi bazlı özeti gizle" : "Kişi bazlı özeti aç"}
+              </button>
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-slate-950">Kişi başı günlük potansiyel</div>
-                  <div className="text-sm text-[color:var(--text-muted)]">
-                    Bugün her profil en fazla ne kadar kazanabilir
-                  </div>
-                </div>
-              </div>
-
-              {todaysPotentialByUser.length === 0 ? (
+            {showTaskPotentialDetails ? (
+              todaysPotentialByUser.length === 0 ? (
                 <div className="mt-3 rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-[color:var(--text-muted)]">
                   Bugün için planlanmış görev görünmüyor.
                 </div>
@@ -817,8 +801,8 @@ export function ParentPanel(props: ParentPanelProps) {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              )
+            ) : null}
           </div>
 
           <div className="space-y-3">
