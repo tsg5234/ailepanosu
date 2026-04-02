@@ -1,6 +1,43 @@
 "use client";
 
 let audioContext: AudioContext | null = null;
+let lastSuccessPhraseIndex = -1;
+
+const SUCCESS_PHRASES_WITH_NAME = [
+  (name: string) => `${name}, harika gidiyorsun`,
+  (name: string) => `Super ${name}`,
+  (name: string) => `${name}, bunu da tamamladin`,
+  (name: string) => `Bravo ${name}`,
+  (name: string) => `${name}, cok iyi oldu`,
+  (name: string) => `${name}, sahane`
+];
+
+const SUCCESS_PHRASES_GENERIC = [
+  () => "Harika gidiyorsun",
+  () => "Super is",
+  () => "Bunu da tamamladin",
+  () => "Cok guzel oldu",
+  () => "Bravo",
+  () => "Mis gibi"
+];
+
+function pickSuccessPhrase(name?: string) {
+  const phraseBuilders = name ? SUCCESS_PHRASES_WITH_NAME : SUCCESS_PHRASES_GENERIC;
+
+  if (phraseBuilders.length === 1) {
+    lastSuccessPhraseIndex = 0;
+    return phraseBuilders[0](name ?? "");
+  }
+
+  let nextIndex = Math.floor(Math.random() * phraseBuilders.length);
+
+  if (nextIndex === lastSuccessPhraseIndex) {
+    nextIndex = (nextIndex + 1) % phraseBuilders.length;
+  }
+
+  lastSuccessPhraseIndex = nextIndex;
+  return phraseBuilders[nextIndex](name ?? "");
+}
 
 function getContext() {
   if (typeof window === "undefined") {
@@ -40,12 +77,10 @@ export async function playSuccessAudio(name?: string) {
   }
 
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
-    const utterance = new SpeechSynthesisUtterance(
-      name ? `Aferin ${name}` : "Aferin"
-    );
+    const utterance = new SpeechSynthesisUtterance(pickSuccessPhrase(name));
     utterance.lang = "tr-TR";
-    utterance.rate = 1;
-    utterance.pitch = 1.12;
+    utterance.rate = 0.97 + Math.random() * 0.08;
+    utterance.pitch = 1.02 + Math.random() * 0.16;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }
