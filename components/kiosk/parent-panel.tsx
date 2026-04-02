@@ -6,7 +6,7 @@ import { CheckCircle2, Gift, Settings2, ShieldCheck, Star, Users } from "lucide-
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
-import { TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
+import { isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type {
   DashboardPayload,
@@ -307,6 +307,48 @@ export function ParentPanel(props: ParentPanelProps) {
   const filteredTaskCount = useMemo(
     () => filteredTaskGroups.reduce((total, group) => total + group.entries.length, 0),
     [filteredTaskGroups]
+  );
+  const visibleTaskPoints = useMemo(
+    () =>
+      filteredTaskGroups.reduce(
+        (total, group) => total + group.entries.reduce((groupTotal, task) => groupTotal + task.points, 0),
+        0
+      ),
+    [filteredTaskGroups]
+  );
+  const todaysPotentialByUser = useMemo(() => {
+    if (!data?.family) {
+      return [];
+    }
+
+    const now = new Date();
+
+    return data.users
+      .map((user) => {
+        const todaysTasks = data.tasks.filter(
+          (task) =>
+            task.assigned_to.includes(user.id) &&
+            isTaskScheduledForDate(task, data.today.dateKey, now, data.family)
+        );
+
+        return {
+          user,
+          taskCount: todaysTasks.length,
+          points: todaysTasks.reduce((total, task) => total + task.points, 0)
+        };
+      })
+      .filter((item) => item.taskCount > 0)
+      .sort((left, right) => {
+        if (right.points !== left.points) {
+          return right.points - left.points;
+        }
+
+        return left.user.name.localeCompare(right.user.name, "tr");
+      });
+  }, [data]);
+  const todaysFamilyPotential = useMemo(
+    () => todaysPotentialByUser.reduce((total, item) => total + item.points, 0),
+    [todaysPotentialByUser]
   );
   const selectedPointUser = pointsUserId ? userLookup[pointsUserId] : undefined;
   const todaysCompletedTasks = useMemo(() => {
@@ -713,6 +755,70 @@ export function ParentPanel(props: ParentPanelProps) {
                 </button>
               );
             })}
+          </div>
+
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--text-muted)]">
+                  Görünen puan
+                </div>
+                <div className="mt-2 text-3xl font-semibold text-slate-950">{visibleTaskPoints} puan</div>
+                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  {filteredTaskCount} varyasyon • {filteredTaskGroups.length} başlık
+                </div>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--text-muted)]">
+                  Bugünkü aile tavanı
+                </div>
+                <div className="mt-2 text-3xl font-semibold text-slate-950">{todaysFamilyPotential} puan</div>
+                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  {todaysPotentialByUser.length || 0} profil bugün görev alıyor
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-950">Kişi başı günlük potansiyel</div>
+                  <div className="text-sm text-[color:var(--text-muted)]">
+                    Bugün her profil en fazla ne kadar kazanabilir
+                  </div>
+                </div>
+              </div>
+
+              {todaysPotentialByUser.length === 0 ? (
+                <div className="mt-3 rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-[color:var(--text-muted)]">
+                  Bugün için planlanmış görev görünmüyor.
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {todaysPotentialByUser.map((item) => (
+                    <div
+                      key={item.user.id}
+                      className="flex min-w-[180px] flex-1 items-center gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-3 py-3"
+                    >
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] text-xl"
+                        style={{ backgroundColor: `${item.user.color}20` }}
+                      >
+                        <AvatarDisplay avatar={item.user.avatar} name={item.user.name} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-slate-950">{item.user.name}</div>
+                        <div className="text-xs text-[color:var(--text-muted)]">{item.taskCount} görev</div>
+                      </div>
+                      <div className="ml-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                        {item.points} puan
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
