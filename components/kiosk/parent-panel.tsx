@@ -82,6 +82,13 @@ const rewardDefaults: RewardFormPayload = {
   approvalRequired: true
 };
 
+function createTaskDraft(ownerId?: string): TaskFormPayload {
+  return {
+    ...taskDefaults,
+    assignedTo: ownerId ? [ownerId] : []
+  };
+}
+
 function Card({
   title,
   description,
@@ -197,6 +204,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [showTaskPotentialDetails, setShowTaskPotentialDetails] = useState(false);
+  const [taskUserView, setTaskUserView] = useState<string>("tum");
 
   useEffect(() => {
     if (!data?.family) {
@@ -211,6 +219,42 @@ export function ParentPanel(props: ParentPanelProps) {
     setPointsUserId((current) => current || data.users[0]?.id || "");
   }, [data]);
 
+  useEffect(() => {
+    if (!data?.users.length) {
+      setTaskUserView("tum");
+      return;
+    }
+
+    const validUserIds = new Set(data.users.map((user) => user.id));
+
+    setTaskUserView((current) => (current === "tum" || validUserIds.has(current) ? current : data.users[0].id));
+    setTaskDraft((current) => {
+      const currentOwnerId = current.assignedTo[0];
+      if (currentOwnerId && validUserIds.has(currentOwnerId)) {
+        return current;
+      }
+
+      return createTaskDraft(data.users[0].id);
+    });
+  }, [data?.users]);
+
+  useEffect(() => {
+    if (taskUserView === "tum") {
+      return;
+    }
+
+    setTaskDraft((current) => {
+      if (current.id || current.assignedTo[0] === taskUserView) {
+        return current;
+      }
+
+      return {
+        ...current,
+        assignedTo: [taskUserView]
+      };
+    });
+  }, [taskUserView]);
+
   const userLookup = useMemo(
     () => Object.fromEntries((data?.users ?? []).map((user) => [user.id, user])),
     [data?.users]
@@ -219,6 +263,10 @@ export function ParentPanel(props: ParentPanelProps) {
     () => Object.fromEntries((data?.rewards ?? []).map((reward) => [reward.id, reward])),
     [data?.rewards]
   );
+  const taskUsers = data?.users ?? [];
+  const selectedTaskUser = taskUserView !== "tum" ? userLookup[taskUserView] : undefined;
+  const activeTaskOwnerId = taskDraft.assignedTo[0] ?? "";
+  const activeTaskOwner = activeTaskOwnerId ? userLookup[activeTaskOwnerId] : undefined;
   const taskLookup = useMemo(
     () => Object.fromEntries((data?.tasks ?? []).map((task) => [task.id, task])),
     [data?.tasks]
@@ -226,6 +274,11 @@ export function ParentPanel(props: ParentPanelProps) {
   const filteredTaskGroups = useMemo(() => {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
     const filteredTasks = (data?.tasks ?? []).filter((task) => {
+      const matchesUser = taskUserView === "tum" || task.assigned_to.includes(taskUserView);
+      if (!matchesUser) {
+        return false;
+      }
+
       const matchesTime = taskTimeFilter === "tum" || task.time_block === taskTimeFilter;
       if (!matchesTime) {
         return false;
@@ -304,7 +357,7 @@ export function ParentPanel(props: ParentPanelProps) {
         })
       }))
       .sort((left, right) => left.title.localeCompare(right.title, "tr"));
-  }, [data?.tasks, taskSearch, taskTimeFilter, userLookup]);
+  }, [data?.tasks, taskSearch, taskTimeFilter, taskUserView, userLookup]);
   const filteredTaskCount = useMemo(
     () => filteredTaskGroups.reduce((total, group) => total + group.entries.length, 0),
     [filteredTaskGroups]
@@ -351,6 +404,10 @@ export function ParentPanel(props: ParentPanelProps) {
     () => todaysPotentialByUser.reduce((total, item) => total + item.points, 0),
     [todaysPotentialByUser]
   );
+  const selectedTaskUserPotential = useMemo(
+    () => (taskUserView === "tum" ? undefined : todaysPotentialByUser.find((item) => item.user.id === taskUserView)),
+    [taskUserView, todaysPotentialByUser]
+  );
   const selectedPointUser = pointsUserId ? userLookup[pointsUserId] : undefined;
   const todaysCompletedTasks = useMemo(() => {
     if (!data || !pointsUserId) {
@@ -368,12 +425,17 @@ export function ParentPanel(props: ParentPanelProps) {
   }, [data, pointsUserId, taskLookup]);
 
   const loadTaskIntoDraft = (task: TaskRecord) => {
+    const focusedOwnerId =
+      taskUserView !== "tum" && task.assigned_to.includes(taskUserView)
+        ? taskUserView
+        : task.assigned_to[0] ?? "";
+
     setTaskDraft({
       id: task.id,
       title: task.title,
       icon: task.icon || DEFAULT_TASK_ICON,
       points: task.points,
-      assignedTo: task.assigned_to,
+      assignedTo: focusedOwnerId ? [focusedOwnerId] : task.assigned_to,
       scheduleType: task.schedule_type,
       days: task.days,
       specialDates: task.special_dates,
@@ -523,9 +585,64 @@ export function ParentPanel(props: ParentPanelProps) {
   );
 
   const tasksTab = (
-    <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+    <div className="space-y-5">
+      <div className="glass-panel rounded-[1.8rem] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-950">Kişiye göre görev yönetimi</div>
+            <div className="text-sm text-[color:var(--text-muted)]">
+              Her profilin görevini ve puanını ayrı ayrı planla.
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setTaskUserView("tum")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                taskUserView === "tum" ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
+              }`}
+            >
+              Tümü
+            </button>
+            {taskUsers.map((user) => {
+              const active = taskUserView === user.id;
+              return (
+                <button
+                  key={user.id}
+                  onClick={() => setTaskUserView(user.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-base">
+                      <AvatarDisplay avatar={user.avatar} name={user.name} />
+                    </span>
+                    <span>{user.name}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
       <Card title="Görev düzenleyici" description="Tablet ekranında görünecek görevleri planlayın.">
         <div className="space-y-4">
+          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
+            {selectedTaskUser ? (
+              <span>
+                Şu an <strong>{selectedTaskUser.name}</strong> için görev planlıyorsun.
+              </span>
+            ) : activeTaskOwner ? (
+              <span>
+                Düzenlenen görev sahibi: <strong>{activeTaskOwner.name}</strong>
+              </span>
+            ) : (
+              <span>Görevi önce bir profile bağla, sonra puan ve zamanlamayı belirle.</span>
+            )}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
             <label className="block space-y-2">
               <Label>Başlık</Label>
@@ -549,21 +666,20 @@ export function ParentPanel(props: ParentPanelProps) {
             </label>
           </div>
           <div className="space-y-2">
-            <Label>Atanan kişiler</Label>
+            <Label>Görev sahibi</Label>
             <div className="flex flex-wrap gap-2">
-              {data?.users.map((user) => {
-                  const active = taskDraft.assignedTo.includes(user.id);
+              {taskUsers.map((user) => {
+                  const active = activeTaskOwnerId === user.id;
                   return (
                     <button
                       key={user.id}
-                      onClick={() =>
+                      onClick={() => {
+                        setTaskUserView(user.id);
                         setTaskDraft((current) => ({
                           ...current,
-                          assignedTo: active
-                            ? current.assignedTo.filter((id) => id !== user.id)
-                            : [...current.assignedTo, user.id]
-                        }))
-                      }
+                          assignedTo: [user.id]
+                        }));
+                      }}
                       className={`rounded-full px-4 py-2 text-sm font-semibold ${
                         active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
                       }`}
@@ -707,14 +823,14 @@ export function ParentPanel(props: ParentPanelProps) {
           <div className="flex gap-3">
             <button
               onClick={() => onSaveTask(taskDraft)}
-              disabled={working}
+              disabled={working || !taskDraft.assignedTo.length}
               className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
             >
               {taskDraft.id ? "Güncelle" : "Görev ekle"}
             </button>
             <button
               onClick={() => {
-                setTaskDraft(taskDefaults);
+                setTaskDraft(createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id));
                 setSpecialDate("");
               }}
               className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
@@ -725,7 +841,14 @@ export function ParentPanel(props: ParentPanelProps) {
         </div>
       </Card>
 
-      <Card title="Görev listesi" description="Ara, filtrele ve görev varyasyonlarını daha net görün.">
+      <Card
+        title="Görev listesi"
+        description={
+          selectedTaskUser
+            ? `${selectedTaskUser.name} için görevleri ara, filtrele ve düzenle.`
+            : "Ara, filtrele ve görev varyasyonlarını daha net görün."
+        }
+      >
         <div className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <label className="block w-full lg:max-w-sm">
@@ -737,6 +860,7 @@ export function ParentPanel(props: ParentPanelProps) {
               />
             </label>
             <div className="text-sm font-medium text-[color:var(--text-muted)]">
+              {selectedTaskUser ? `${selectedTaskUser.name} için ` : ""}
               {filteredTaskCount} varyasyon • {filteredTaskGroups.length} başlık
             </div>
           </div>
@@ -761,19 +885,33 @@ export function ParentPanel(props: ParentPanelProps) {
           <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
-                <span className="font-semibold text-slate-950">{visibleTaskPoints} puan görünür</span>
-                <span>{todaysFamilyPotential} puan bugün dağıtılabilir</span>
-                <span>{todaysPotentialByUser.length || 0} profil bugün görev alıyor</span>
+                {selectedTaskUser ? (
+                  <>
+                    <span className="font-semibold text-slate-950">
+                      {selectedTaskUser.name} için {visibleTaskPoints} puan görünür
+                    </span>
+                    <span>{selectedTaskUserPotential?.points ?? 0} puan bugün kazanabilir</span>
+                    <span>{selectedTaskUserPotential?.taskCount ?? 0} görev bugün planlı</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-slate-950">{visibleTaskPoints} puan görünür</span>
+                    <span>{todaysFamilyPotential} puan bugün dağıtılabilir</span>
+                    <span>{todaysPotentialByUser.length || 0} profil bugün görev alıyor</span>
+                  </>
+                )}
               </div>
-              <button
-                onClick={() => setShowTaskPotentialDetails((current) => !current)}
-                className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                {showTaskPotentialDetails ? "Kişi bazlı özeti gizle" : "Kişi bazlı özeti aç"}
-              </button>
+              {taskUserView === "tum" ? (
+                <button
+                  onClick={() => setShowTaskPotentialDetails((current) => !current)}
+                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  {showTaskPotentialDetails ? "Kişi bazlı özeti gizle" : "Kişi bazlı özeti aç"}
+                </button>
+              ) : null}
             </div>
 
-            {showTaskPotentialDetails ? (
+            {taskUserView === "tum" && showTaskPotentialDetails ? (
               todaysPotentialByUser.length === 0 ? (
                 <div className="mt-3 rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-[color:var(--text-muted)]">
                   Bugün için planlanmış görev görünmüyor.
@@ -821,7 +959,8 @@ export function ParentPanel(props: ParentPanelProps) {
                       <div className="min-w-0">
                         <div className="truncate text-lg font-semibold">{group.title}</div>
                         <div className="text-sm text-[color:var(--text-muted)]">
-                          {group.entries.length} varyasyon • {group.assignedSummary}
+                          {group.entries.length} varyasyon
+                          {taskUserView === "tum" ? ` • ${group.assignedSummary}` : ""}
                         </div>
                       </div>
                     </div>
@@ -866,13 +1005,15 @@ export function ParentPanel(props: ParentPanelProps) {
                                 {getTaskScheduleSummary(task)}
                               </span>
                             </div>
-                            <div
-                              className={`text-sm ${
-                                active ? "text-white/80" : "text-[color:var(--text-muted)]"
-                              }`}
-                            >
-                              {task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean).join(", ")}
-                            </div>
+                            {taskUserView === "tum" ? (
+                              <div
+                                className={`text-sm ${
+                                  active ? "text-white/80" : "text-[color:var(--text-muted)]"
+                                }`}
+                              >
+                                {task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean).join(", ")}
+                              </div>
+                            ) : null}
                           </div>
                         </button>
                       );
@@ -884,6 +1025,7 @@ export function ParentPanel(props: ParentPanelProps) {
           </div>
         </div>
       </Card>
+      </div>
     </div>
   );
 
