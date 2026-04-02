@@ -627,16 +627,6 @@ export function ParentPanel(props: ParentPanelProps) {
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
       <Card title="Görev düzenleyici" description="Tablet ekranında görünecek görevleri planlayın.">
         <div className="space-y-4">
-          <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
-            {selectedTaskUser ? (
-              <span>
-                Şu an <strong>{selectedTaskUser.name}</strong> için görev planlıyorsun.
-              </span>
-            ) : (
-              <span>Önce üstten bir profil seç, sonra o kişiye özel görev planla.</span>
-            )}
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
             <label className="block space-y-2">
               <Label>Başlık</Label>
