@@ -265,8 +265,6 @@ export function ParentPanel(props: ParentPanelProps) {
   );
   const taskUsers = data?.users ?? [];
   const selectedTaskUser = taskUserView !== "tum" ? userLookup[taskUserView] : undefined;
-  const activeTaskOwnerId = taskDraft.assignedTo[0] ?? "";
-  const activeTaskOwner = activeTaskOwnerId ? userLookup[activeTaskOwnerId] : undefined;
   const taskLookup = useMemo(
     () => Object.fromEntries((data?.tasks ?? []).map((task) => [task.id, task])),
     [data?.tasks]
@@ -634,12 +632,8 @@ export function ParentPanel(props: ParentPanelProps) {
               <span>
                 Şu an <strong>{selectedTaskUser.name}</strong> için görev planlıyorsun.
               </span>
-            ) : activeTaskOwner ? (
-              <span>
-                Düzenlenen görev sahibi: <strong>{activeTaskOwner.name}</strong>
-              </span>
             ) : (
-              <span>Görevi önce bir profile bağla, sonra puan ve zamanlamayı belirle.</span>
+              <span>Önce üstten bir profil seç, sonra o kişiye özel görev planla.</span>
             )}
           </div>
 
@@ -664,36 +658,6 @@ export function ParentPanel(props: ParentPanelProps) {
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               />
             </label>
-          </div>
-          <div className="space-y-2">
-            <Label>Görev sahibi</Label>
-            <div className="flex flex-wrap gap-2">
-              {taskUsers.map((user) => {
-                  const active = activeTaskOwnerId === user.id;
-                  return (
-                    <button
-                      key={user.id}
-                      onClick={() => {
-                        setTaskUserView(user.id);
-                        setTaskDraft((current) => ({
-                          ...current,
-                          assignedTo: [user.id]
-                        }));
-                      }}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                        active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-base">
-                          <AvatarDisplay avatar={user.avatar} name={user.name} />
-                        </span>
-                        <span>{user.name}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-2">
