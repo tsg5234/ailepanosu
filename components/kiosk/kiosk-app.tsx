@@ -618,6 +618,21 @@ export function KioskApp({ mode }: KioskAppProps) {
     return Math.min(selectedUser.points / nextRewardGoal.points_required, 1);
   }, [nextRewardGoal, selectedUser]);
   const rewardInsightCount = Number(rewardModeShowsValue) + Number(rewardModeShowsGoals && nextRewardGoal);
+  const shouldShowRewardInsights =
+    rewardSystemConfig.mode !== "puan" && (rewardModeShowsValue || (rewardModeShowsGoals && nextRewardGoal));
+  const compactScorePill = (
+    <div className="kid-score-pill bg-white/78 text-slate-900 ring-1 ring-white/90 shadow-[0_14px_28px_rgba(15,23,42,0.08)]">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-200/95 text-amber-700 shadow-[0_10px_20px_rgba(15,23,42,0.12)]">
+        <Star className="h-5 w-5 fill-current" />
+      </span>
+      <span className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
+        Toplam
+      </span>
+      <span className="text-lg font-black tracking-[-0.03em]">
+        {selectedUser?.points ?? 0}
+      </span>
+    </div>
+  );
 
   if (loading && !data) {
     return (
@@ -1045,22 +1060,24 @@ export function KioskApp({ mode }: KioskAppProps) {
                       />
                     ))}
                   </div>
-                  <div className="kid-score-pill bg-white/16 text-white ring-1 ring-white/18">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-200/95 text-amber-700 shadow-[0_10px_20px_rgba(15,23,42,0.16)]">
-                      <Star className="h-5 w-5 fill-current" />
-                    </span>
-                    <span className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-white/72">
-                      Toplam
-                    </span>
-                    <span className="text-lg font-black tracking-[-0.03em]">
-                      {selectedUser.points}
-                    </span>
-                  </div>
+                  {!shouldShowRewardInsights ? (
+                    <div className="kid-score-pill bg-white/16 text-white ring-1 ring-white/18">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-200/95 text-amber-700 shadow-[0_10px_20px_rgba(15,23,42,0.16)]">
+                        <Star className="h-5 w-5 fill-current" />
+                      </span>
+                      <span className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-white/72">
+                        Toplam
+                      </span>
+                      <span className="text-lg font-black tracking-[-0.03em]">
+                        {selectedUser.points}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </section>
 
-            {rewardSystemConfig.mode !== "puan" && (rewardModeShowsValue || (rewardModeShowsGoals && nextRewardGoal)) ? (
+            {shouldShowRewardInsights ? (
               <section className={`mt-4 grid gap-3 ${rewardInsightCount > 1 ? "lg:grid-cols-2" : ""}`}>
                 {rewardModeShowsValue ? (
                   <div
@@ -1097,16 +1114,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                        <div
-                          className="rounded-full px-3 py-1.5 text-sm font-semibold"
-                          style={{
-                            background: withAlpha(selectedTheme.primary, "14"),
-                            color: selectedTheme.text,
-                            boxShadow: `inset 0 0 0 1px ${withAlpha(selectedTheme.primary, "32")}`
-                          }}
-                        >
-                          {selectedUser.points} puan
-                        </div>
+                        {compactScorePill}
                         <div className="rounded-full bg-white/78 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 ring-1 ring-white/90">
                           Hazir birikim
                         </div>
