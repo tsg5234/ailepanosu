@@ -361,6 +361,45 @@ function getCompactDayPartChipClasses(timeBlock: TimeBlock) {
   }
 }
 
+function getTaskGroupTone(timeBlock: TimeBlock, isCurrent: boolean) {
+  const tones = {
+    sabah: {
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(240,249,255,0.98) 58%, rgba(186,230,253,0.82) 100%)",
+      border: isCurrent ? "rgba(56,189,248,0.42)" : "rgba(125,211,252,0.34)",
+      shadow: isCurrent ? "0 18px 36px rgba(14,165,233,0.16)" : "0 14px 30px rgba(125,211,252,0.12)",
+      badgeBg: "rgba(14,165,233,0.10)",
+      badgeText: "#0c4a6e"
+    },
+    ogleden_sonra: {
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,251,235,0.98) 58%, rgba(253,230,138,0.80) 100%)",
+      border: isCurrent ? "rgba(245,158,11,0.42)" : "rgba(252,211,77,0.34)",
+      shadow: isCurrent ? "0 18px 36px rgba(245,158,11,0.15)" : "0 14px 30px rgba(252,211,77,0.12)",
+      badgeBg: "rgba(245,158,11,0.10)",
+      badgeText: "#92400e"
+    },
+    aksam: {
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(238,242,255,0.98) 58%, rgba(199,210,254,0.82) 100%)",
+      border: isCurrent ? "rgba(99,102,241,0.42)" : "rgba(129,140,248,0.34)",
+      shadow: isCurrent ? "0 18px 36px rgba(99,102,241,0.15)" : "0 14px 30px rgba(129,140,248,0.12)",
+      badgeBg: "rgba(99,102,241,0.10)",
+      badgeText: "#3730a3"
+    },
+    her_zaman: {
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.98) 58%, rgba(167,243,208,0.82) 100%)",
+      border: isCurrent ? "rgba(16,185,129,0.40)" : "rgba(52,211,153,0.32)",
+      shadow: isCurrent ? "0 18px 36px rgba(16,185,129,0.14)" : "0 14px 30px rgba(52,211,153,0.11)",
+      badgeBg: "rgba(16,185,129,0.10)",
+      badgeText: "#065f46"
+    }
+  } as const;
+
+  return tones[timeBlock];
+}
+
 function getActiveDayPartMeta(timeBlock: ActiveTimeBlock) {
   if (timeBlock === "gece") {
     return {
@@ -1113,11 +1152,8 @@ export function KioskApp({ mode }: KioskAppProps) {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                      <div className="flex items-center justify-center sm:self-center">
                         {compactScorePill}
-                        <div className="rounded-full bg-white/78 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 ring-1 ring-white/90">
-                          Hazir birikim
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1210,6 +1246,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                   const completedCount = group.totalCount - group.tasks.length;
                   const isExpanded = expandedTaskGroup === group.block;
                   const isCurrentGroup = currentDayPart !== "gece" && group.block === currentDayPart;
+                  const groupTone = getTaskGroupTone(group.block, isCurrentGroup);
 
                   return (
                     <section key={group.block} className="space-y-3">
@@ -1218,37 +1255,58 @@ export function KioskApp({ mode }: KioskAppProps) {
                         onClick={() =>
                           setExpandedTaskGroup((current) => (current === group.block ? null : group.block))
                         }
-                        className="glass-panel-strong flex w-full flex-col gap-2 rounded-[1.8rem] border border-white/12 px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
+                        className="relative flex w-full flex-col gap-3 overflow-hidden rounded-[1.8rem] px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between"
+                        style={{
+                          backgroundImage: groupTone.background,
+                          border: `1px solid ${groupTone.border}`,
+                          boxShadow: groupTone.shadow
+                        }}
                       >
-                        <div className="flex min-w-0 items-center gap-3">
+                        <div className="pointer-events-none absolute -left-8 top-[-2rem] h-24 w-24 rounded-full blur-3xl" style={{ background: groupTone.badgeBg }} />
+                        <div className="pointer-events-none absolute bottom-[-2rem] right-[-1rem] h-24 w-24 rounded-full blur-3xl" style={{ background: groupTone.badgeBg }} />
+
+                        <div className="relative flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
                           <div
-                            className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-black tracking-[-0.02em] ${getCompactDayPartChipClasses(group.block)}`}
+                            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-2 text-sm font-black tracking-[-0.02em] ${getCompactDayPartChipClasses(group.block)}`}
                           >
                             <span aria-hidden="true">{dayPart.emoji}</span>
                             <span>{dayPart.label}</span>
                           </div>
-                          {isCurrentGroup ? (
-                            <span className="rounded-full bg-white/14 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-white">
-                              Simdi
+                          <div className="flex flex-wrap items-center gap-2">
+                            {isCurrentGroup ? (
+                              <span className="rounded-full bg-slate-950 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-white">
+                                Simdi
+                              </span>
+                            ) : null}
+                            <span
+                              className="rounded-full px-3 py-1 text-xs font-semibold"
+                              style={{ background: groupTone.badgeBg, color: groupTone.badgeText }}
+                            >
+                              {completedCount === group.totalCount ? "Bolum tamam" : "Bugunun akisi"}
                             </span>
-                          ) : null}
+                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-3 sm:justify-end">
-                          <div className="text-right text-[0.92rem] text-white/72">
-                            <div className="font-semibold text-white">
-                              {group.tasks.length > 0 ? `${group.tasks.length} acik gorev` : "Bu bolum tamam"}
-                            </div>
-                            <div>
-                              {completedCount > 0
-                                ? `${completedCount}/${group.totalCount} tamam`
-                                : `${group.totalCount} gorev`}
-                            </div>
+                        <div className="relative flex items-center justify-between gap-3 sm:justify-end">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <span
+                              className="rounded-full px-3 py-1.5 text-sm font-semibold"
+                              style={{ background: "rgba(255,255,255,0.76)", color: groupTone.badgeText }}
+                            >
+                              {completedCount}/{group.totalCount} tamam
+                            </span>
+                            <span
+                              className="rounded-full px-3 py-1.5 text-sm font-semibold"
+                              style={{ background: groupTone.badgeBg, color: groupTone.badgeText }}
+                            >
+                              {group.tasks.length > 0 ? `${group.tasks.length} acik gorev` : "Acik gorev yok"}
+                            </span>
                           </div>
                           <ChevronDown
-                            className={`h-5 w-5 shrink-0 text-white/78 transition-transform duration-200 ${
+                            className={`h-5 w-5 shrink-0 transition-transform duration-200 ${
                               isExpanded ? "rotate-180" : ""
                             }`}
+                            style={{ color: groupTone.badgeText }}
                           />
                         </div>
                       </button>
