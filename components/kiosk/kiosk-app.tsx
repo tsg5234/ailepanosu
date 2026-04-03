@@ -34,7 +34,6 @@ import { PinModal } from "@/components/kiosk/pin-modal";
 import { SetupScreen } from "@/components/kiosk/setup-screen";
 import { playSuccessAudio } from "@/lib/client-audio";
 import {
-  formatPointsAsValue,
   getRewardSystemConfig,
   getVisibleRewards,
   rewardModeUsesGoals,
@@ -647,7 +646,22 @@ export function KioskApp({ mode }: KioskAppProps) {
       return null;
     }
 
-    return formatPointsAsValue(selectedUser.points, rewardSystemConfig);
+    const amount = selectedUser.points * rewardSystemConfig.valuePerPoint;
+    const hasFractions = Math.abs(amount % 1) > 0.001;
+    const formattedAmount = new Intl.NumberFormat("tr-TR", {
+      minimumFractionDigits: hasFractions ? 1 : 0,
+      maximumFractionDigits: hasFractions ? 2 : 0
+    }).format(amount);
+    const label = rewardSystemConfig.valueLabel.trim();
+    const normalizedLabel = label.toLocaleLowerCase("tr-TR");
+    const isLiraLike = ["tl", "₺", "try", "türk lirası", "turk lirasi"].includes(normalizedLabel);
+
+    return {
+      amount: formattedAmount,
+      label,
+      displayUnit: isLiraLike ? "₺" : label,
+      isLiraLike
+    };
   }, [rewardModeShowsValue, rewardSystemConfig, selectedUser]);
   const nextRewardProgressRatio = useMemo(() => {
     if (!nextRewardGoal || nextRewardGoal.points_required <= 0 || !selectedUser) {
@@ -1143,8 +1157,31 @@ export function KioskApp({ mode }: KioskAppProps) {
                           <div className="text-[0.72rem] font-black uppercase tracking-[0.22em] text-slate-500">
                             Birikimin
                           </div>
-                          <div className="mt-1 text-4xl font-black tracking-[-0.06em] sm:text-[2.8rem]">
-                            {convertedPointsValue}
+                          <div className="mt-1 flex flex-wrap items-end gap-2 sm:gap-3">
+                            <div
+                              className="text-4xl font-black tracking-[-0.06em] sm:text-[2.8rem]"
+                              style={{
+                                backgroundImage: `linear-gradient(135deg, ${selectedTheme.primary} 0%, ${selectedTheme.secondary} 65%, ${selectedTheme.accent} 100%)`,
+                                WebkitBackgroundClip: "text",
+                                backgroundClip: "text",
+                                color: "transparent"
+                              }}
+                            >
+                              {convertedPointsValue?.amount}
+                            </div>
+                            <div
+                              className={`mb-1 inline-flex items-center justify-center rounded-full font-black shadow-[0_12px_24px_rgba(15,23,42,0.12)] ${
+                                convertedPointsValue?.isLiraLike
+                                  ? "h-11 min-w-11 px-0 text-[1.35rem]"
+                                  : "px-3 py-2 text-sm"
+                              }`}
+                              style={{
+                                backgroundImage: `linear-gradient(145deg, ${withAlpha(selectedTheme.accent, "E8")} 0%, ${withAlpha(selectedTheme.primary, "D8")} 100%)`,
+                                color: "#fff"
+                              }}
+                            >
+                              {convertedPointsValue?.displayUnit}
+                            </div>
                           </div>
                           <div className="mt-2 text-sm font-medium text-slate-600">
                             Gorevlerle biriktirdigin toplam deger
