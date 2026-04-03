@@ -1170,14 +1170,15 @@ export function KioskApp({ mode }: KioskAppProps) {
                               {convertedPointsValue?.amount}
                             </div>
                             <div
-                              className={`mb-1 inline-flex items-center justify-center rounded-full font-black shadow-[0_12px_24px_rgba(15,23,42,0.12)] ${
+                              className={`mb-[0.32rem] inline-flex items-center justify-center font-black ${
                                 convertedPointsValue?.isLiraLike
-                                  ? "h-11 min-w-11 px-0 text-[1.35rem]"
-                                  : "px-3 py-2 text-sm"
+                                  ? "rounded-[0.95rem] px-2.5 py-1.5 text-[1.05rem]"
+                                  : "rounded-full px-2.5 py-1.5 text-sm"
                               }`}
                               style={{
-                                backgroundImage: `linear-gradient(145deg, ${withAlpha(selectedTheme.accent, "E8")} 0%, ${withAlpha(selectedTheme.primary, "D8")} 100%)`,
-                                color: "#fff"
+                                background: withAlpha(selectedTheme.primary, convertedPointsValue?.isLiraLike ? "16" : "14"),
+                                color: selectedTheme.text,
+                                boxShadow: `inset 0 0 0 1px ${withAlpha(selectedTheme.primary, "24")}`
                               }}
                             >
                               {convertedPointsValue?.displayUnit}
