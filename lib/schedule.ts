@@ -25,9 +25,9 @@ export const WEEKDAY_LABELS: Record<(typeof WEEKDAY_KEYS)[number], string> = {
 
 export const TIME_BLOCK_LABELS: Record<TimeBlock, string> = {
   sabah: "Sabah",
-  ogleden_sonra: "Ogleden Sonra",
-  aksam: "Aksam",
-  her_zaman: "Gun Boyu"
+  ogleden_sonra: "Öğleden Sonra",
+  aksam: "Akşam",
+  her_zaman: "Gün Boyu"
 };
 
 interface FamilyTimingSettings {

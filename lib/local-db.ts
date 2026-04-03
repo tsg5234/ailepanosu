@@ -195,7 +195,7 @@ export async function registerLocalAccount(username: string, password: string) {
   const state = getState();
 
   if (state.accounts.some((account) => account.username === username)) {
-    throw new Error("Bu kullanici adi zaten kullaniliyor.");
+    throw new Error("Bu kullanıcı adı zaten kullanılıyor.");
   }
 
   const account: LocalAccountRecord = {
@@ -221,7 +221,7 @@ export async function loginLocalAccount(username: string, password: string) {
   const account = getState().accounts.find((item) => item.username === username);
 
   if (!account || !compareSync(password, account.password_hash)) {
-    throw new Error("Kullanici adi veya sifre hatali.");
+    throw new Error("Kullanıcı adı veya şifre hatalı.");
   }
 
   return {
@@ -242,7 +242,7 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
   }
 
   if (account.family_id) {
-    throw new Error("Kurulum zaten tamamlandi.");
+    throw new Error("Kurulum zaten tamamlandı.");
   }
 
   const createdAt = nowIso();
@@ -325,7 +325,7 @@ export async function saveLocalUser(familyId: string, payload: UserFormPayload) 
     const target = familyState.users.find((user) => user.id === payload.id);
 
     if (!target) {
-      throw new Error("Kullanici bulunamadi.");
+      throw new Error("Kullanıcı bulunamadı.");
     }
 
     target.name = payload.name;
@@ -457,7 +457,7 @@ export async function toggleLocalTaskCompletion(
   const user = familyState.users.find((item) => item.id === userId);
 
   if (!task || !user) {
-    throw new Error("Gorev veya kullanici bulunamadi.");
+    throw new Error("Görev veya kullanıcı bulunamadı.");
   }
 
   const existing = familyState.completions.find(
@@ -480,7 +480,7 @@ export async function toggleLocalTaskCompletion(
       source: "gorev",
       task_id: taskId,
       reward_id: null,
-      note: "Gorev geri alindi",
+      note: "Görev geri alındı",
       created_at: nowIso()
     });
     return { completed: false, points_change: -existing.points_earned, total_points: user.points };
@@ -505,7 +505,7 @@ export async function toggleLocalTaskCompletion(
     source: "gorev",
     task_id: taskId,
     reward_id: null,
-    note: "Gorev tamamlandi",
+    note: "Görev tamamlandı",
     created_at: nowIso()
   });
 
@@ -518,7 +518,7 @@ export async function requestLocalReward(familyId: string, userId: string, rewar
   const reward = familyState.rewards.find((item) => item.id === rewardId);
 
   if (!user || !reward) {
-    throw new Error("Kullanici veya odul bulunamadi.");
+    throw new Error("Kullanıcı veya ödül bulunamadı.");
   }
 
   if (user.points < reward.points_required) {
@@ -547,7 +547,7 @@ export async function requestLocalReward(familyId: string, userId: string, rewar
       source: "odul",
       task_id: null,
       reward_id: rewardId,
-      note: "Odul otomatik verildi",
+      note: "Ödül otomatik verildi",
       created_at: nowIso()
     });
   }
@@ -595,7 +595,7 @@ export async function resolveLocalReward(
       source: "odul",
       task_id: null,
       reward_id: reward.id,
-      note: "Odul onaylandi",
+      note: "Ödül onaylandı",
       created_at: nowIso()
     });
   }
@@ -613,7 +613,7 @@ export async function adjustLocalPoints(
   const user = familyState.users.find((item) => item.id === userId);
 
   if (!user) {
-    throw new Error("Kullanici bulunamadi.");
+    throw new Error("Kullanıcı bulunamadı.");
   }
 
   user.points += delta;

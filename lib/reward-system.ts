@@ -29,22 +29,22 @@ export const REWARD_MODE_OPTIONS: Array<{
   {
     value: "puan",
     label: "Sadece puan",
-    description: "Cocuk sadece puan biriktirir."
+    description: "Çocuk sadece puan biriktirir."
   },
   {
     value: "odul",
-    label: "Hedef oduller",
-    description: "Puan belirli odul hedeflerini acar."
+    label: "Hedef ödüller",
+    description: "Puan belirli ödül hedeflerini açar."
   },
   {
     value: "deger",
-    label: "Deger karsiligi",
-    description: "Puan bir deger birimine donusur."
+    label: "Değer karşılığı",
+    description: "Puan bir değer birimine dönüşür."
   },
   {
     value: "karma",
     label: "Ikisi birlikte",
-    description: "Hem hedef oduller hem deger karsiligi gorunur."
+    description: "Hem hedef ödüller hem değer karşılığı görünür."
   }
 ];
 

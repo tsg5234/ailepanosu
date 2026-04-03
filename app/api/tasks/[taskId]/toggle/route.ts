@@ -16,7 +16,7 @@ export async function POST(request: Request, context: Context) {
     const body = (await request.json()) as { userId?: string; dateKey?: string };
 
     if (!body.userId?.trim()) {
-      return jsonError("Kullanici secilmedi.");
+      return jsonError("Kullanıcı seçilmedi.");
     }
 
     await toggleTaskCompletion(
@@ -28,6 +28,6 @@ export async function POST(request: Request, context: Context) {
 
     return jsonOk(await getDashboardSnapshot());
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Gorev guncellenemedi.", 500);
+    return jsonError(error instanceof Error ? error.message : "Görev güncellenemedi.", 500);
   }
 }

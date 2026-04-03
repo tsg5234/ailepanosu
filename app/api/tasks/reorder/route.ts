@@ -13,12 +13,12 @@ export async function POST(request: Request) {
     const orderedTaskIds = Array.isArray(body.orderedTaskIds) ? body.orderedTaskIds : [];
 
     if (orderedTaskIds.length < 2) {
-      return jsonError("Siralamak icin en az iki gorev gerekli.");
+      return jsonError("Sıralamak için en az iki görev gerekli.");
     }
 
     await reorderTasks(session.familyId, orderedTaskIds);
     return jsonOk(await getDashboardSnapshot());
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Gorev sirasi guncellenemedi", 500);
+    return jsonError(error instanceof Error ? error.message : "Görev sırası güncellenemedi", 500);
   }
 }

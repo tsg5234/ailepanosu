@@ -106,7 +106,7 @@ function validateAccountPayload(payload: AccountAuthPayload) {
 
   if (!USERNAME_PATTERN.test(username)) {
     throw new Error(
-      "Kullanici adi 3-24 karakter olmali ve sadece harf, rakam, nokta, tire veya alt cizgi icermeli."
+      "Kullanıcı adı 3-24 karakter olmalı ve sadece harf, rakam, nokta, tire veya alt çizgi içermeli."
     );
   }
 
@@ -338,7 +338,7 @@ async function insertProfileUser(
     .single();
 
   if (error) {
-    fail("Kullanicilar olusturulamadi", error);
+    fail("Kullanıcılar oluşturulamadı", error);
   }
 
   return normalizeUserRecord(data as UserRecord);
@@ -371,7 +371,7 @@ async function updateProfileUser(
     .eq("family_id", familyId);
 
   if (error) {
-    fail("Kullanici guncellenemedi", error);
+    fail("Kullanıcı güncellenemedi", error);
   }
 }
 
@@ -405,7 +405,7 @@ export async function registerAccount(payload: AccountAuthPayload) {
   }
 
   if (await getAccountUserByUsername(username)) {
-    throw new Error("Bu kullanici adi zaten kullaniliyor.");
+    throw new Error("Bu kullanıcı adı zaten kullanılıyor.");
   }
 
   const familyId = await createPlaceholderFamily();
@@ -439,7 +439,7 @@ export async function loginAccount(payload: AccountAuthPayload) {
   const accountUser = await getAccountUserByUsername(username);
 
   if (!accountUser || !(await bcrypt.compare(password, accountUser.avatar))) {
-    throw new Error("Kullanici adi veya sifre hatali.");
+    throw new Error("Kullanıcı adı veya şifre hatalı.");
   }
 
   return toAuthAccount(accountUser, username);
@@ -496,7 +496,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
   }
 
   if (isAccountSetupComplete(accountUser)) {
-    throw new Error("Kurulum zaten tamamlandi.");
+    throw new Error("Kurulum zaten tamamlandı.");
   }
 
   const supabase = createAdminClient();
@@ -581,7 +581,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     );
 
     if (tasksError) {
-      fail("Ornek gorevler eklenemedi", tasksError);
+      fail("Örnek görevler eklenemedi", tasksError);
     }
 
     const { error: rewardsError } = await supabase.from("rewards").insert([
@@ -600,7 +600,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     ]);
 
     if (rewardsError) {
-      fail("Ornek oduller eklenemedi", rewardsError);
+      fail("Örnek ödüller eklenemedi", rewardsError);
     }
   }
 
@@ -688,19 +688,19 @@ export async function getDashboardSnapshot(
   ]);
 
   if (usersResult.error) {
-    fail("Kullanicilar alinamadi", usersResult.error);
+    fail("Kullanıcılar alınamadı", usersResult.error);
   }
   if (tasksResult.error) {
-    fail("Gorevler alinamadi", tasksResult.error);
+    fail("Görevler alınamadı", tasksResult.error);
   }
   if (completionsResult.error) {
     fail("Tamamlanma kayitlari alinamadi", completionsResult.error);
   }
   if (rewardsResult.error) {
-    fail("Oduller alinamadi", rewardsResult.error);
+    fail("Ödüller alınamadı", rewardsResult.error);
   }
   if (redemptionsResult.error) {
-    fail("Odul talepleri alinamadi", redemptionsResult.error);
+    fail("Ödül talepleri alınamadı", redemptionsResult.error);
   }
   if (eventsResult.error) {
     fail("Puan gecmisi alinamadi", eventsResult.error);
@@ -790,11 +790,11 @@ export async function saveUser(familyId: string, payload: UserFormPayload) {
       .maybeSingle();
 
     if (existingError) {
-      fail("Kullanici guncellenemedi", existingError);
+      fail("Kullanıcı güncellenemedi", existingError);
     }
 
     if (!existing) {
-      throw new Error("Kullanici bulunamadi.");
+      throw new Error("Kullanıcı bulunamadı.");
     }
 
     if (isAccountMarkerName(existing.name)) {
@@ -851,11 +851,11 @@ export async function saveTask(familyId: string, payload: TaskFormPayload) {
       .maybeSingle();
 
     if (error) {
-      fail("Gorev guncellenemedi", error);
+      fail("Görev güncellenemedi", error);
     }
 
     if (!data) {
-      throw new Error("Gorev bulunamadi.");
+      throw new Error("Görev bulunamadı.");
     }
 
     return;
@@ -864,7 +864,7 @@ export async function saveTask(familyId: string, payload: TaskFormPayload) {
   const { error } = await supabase.from("tasks").insert(base);
 
   if (error) {
-    fail("Gorev olusturulamadi", error);
+    fail("Görev oluşturulamadı", error);
   }
 }
 
@@ -887,7 +887,7 @@ export async function reorderTasks(familyId: string, orderedTaskIds: string[]) {
     .order("created_at");
 
   if (error) {
-    fail("Gorev sirasi alinamadi", error);
+    fail("Görev sırası alınamadı", error);
   }
 
   const existingTasks = data ?? [];
@@ -919,7 +919,7 @@ export async function reorderTasks(familyId: string, orderedTaskIds: string[]) {
   const failedResult = results.find((result) => result.error);
 
   if (failedResult?.error) {
-    fail("Gorev sirasi guncellenemedi", failedResult.error);
+    fail("Görev sırası güncellenemedi", failedResult.error);
   }
 }
 
@@ -946,11 +946,11 @@ export async function saveReward(familyId: string, payload: RewardFormPayload) {
       .maybeSingle();
 
     if (error) {
-      fail("Odul guncellenemedi", error);
+      fail("Ödül güncellenemedi", error);
     }
 
     if (!data) {
-      throw new Error("Odul bulunamadi.");
+      throw new Error("Ödül bulunamadı.");
     }
 
     return;
@@ -959,7 +959,7 @@ export async function saveReward(familyId: string, payload: RewardFormPayload) {
   const { error } = await supabase.from("rewards").insert(base);
 
   if (error) {
-    fail("Odul olusturulamadi", error);
+    fail("Ödül oluşturulamadı", error);
   }
 }
 
@@ -1025,11 +1025,11 @@ export async function toggleTaskCompletion(
   ]);
 
   if (taskError) {
-    fail("Gorev dogrulanamadi", taskError);
+    fail("Görev doğrulanamadı", taskError);
   }
 
   if (userError) {
-    fail("Kullanici dogrulanamadi", userError);
+    fail("Kullanıcı doğrulanamadı", userError);
   }
 
   if (!task || !user || isAccountMarkerName(user.name)) {
@@ -1046,7 +1046,7 @@ export async function toggleTaskCompletion(
     .maybeSingle();
 
   if (completionLookupError) {
-    fail("Gorev kaydi kontrol edilemedi", completionLookupError);
+    fail("Görev kaydı kontrol edilemedi", completionLookupError);
   }
 
   if (existingCompletion) {
@@ -1069,20 +1069,20 @@ export async function toggleTaskCompletion(
         source: "gorev",
         task_id: taskId,
         reward_id: null,
-        note: "Gorev geri alindi"
+        note: "Görev geri alındı"
       })
     ]);
 
     if (deleteResult.error) {
-      fail("Tamamlanan gorev geri alinamadi", deleteResult.error);
+      fail("Tamamlanan görev geri alınamadı", deleteResult.error);
     }
 
     if (userUpdateResult.error) {
-      fail("Kullanici puani geri alinamadi", userUpdateResult.error);
+      fail("Kullanıcı puanı geri alınamadı", userUpdateResult.error);
     }
 
     if (eventInsertResult.error) {
-      fail("Gorev gecmisi guncellenemedi", eventInsertResult.error);
+      fail("Görev geçmişi güncellenemedi", eventInsertResult.error);
     }
 
     return {
@@ -1099,7 +1099,7 @@ export async function toggleTaskCompletion(
   });
 
   if (error) {
-    fail("Gorev islenemedi", error);
+    fail("Görev işlenemedi", error);
   }
 
   return data?.[0] ?? null;
@@ -1128,15 +1128,15 @@ export async function requestReward(familyId: string, userId: string, rewardId: 
     ]);
 
   if (userError) {
-    fail("Kullanici dogrulanamadi", userError);
+    fail("Kullanıcı doğrulanamadı", userError);
   }
 
   if (rewardError) {
-    fail("Odul dogrulanamadi", rewardError);
+    fail("Ödül doğrulanamadı", rewardError);
   }
 
   if (!user || !reward || isAccountMarkerName(user.name)) {
-    throw new Error("Bu odul talebi bu hesaba ait degil.");
+    throw new Error("Bu ödül talebi bu hesaba ait değil.");
   }
 
   const { data, error } = await supabase.rpc("request_reward_redemption", {
@@ -1145,7 +1145,7 @@ export async function requestReward(familyId: string, userId: string, rewardId: 
   });
 
   if (error) {
-    fail("Odul talebi olusturulamadi", error);
+    fail("Ödül talebi oluşturulamadı", error);
   }
 
   return data?.[0] ?? null;
@@ -1169,7 +1169,7 @@ export async function resolveReward(
   });
 
   if (error) {
-    fail("Odul talebi guncellenemedi", error);
+    fail("Ödül talebi güncellenemedi", error);
   }
 
   return data?.[0] ?? null;
@@ -1189,11 +1189,11 @@ export async function adjustPoints(familyId: string, userId: string, delta: numb
     .maybeSingle();
 
   if (userError) {
-    fail("Kullanici dogrulanamadi", userError);
+    fail("Kullanıcı doğrulanamadı", userError);
   }
 
   if (!user || isAccountMarkerName(user.name)) {
-    throw new Error("Bu kullanici bulunamadi.");
+    throw new Error("Bu kullanıcı bulunamadı.");
   }
 
   const { data, error } = await supabase.rpc("adjust_user_points", {
@@ -1222,7 +1222,7 @@ export async function resetFamilyProgress(familyId: string) {
     .eq("family_id", familyId);
 
   if (completionsError) {
-    fail("Tamamlanmalar sifirlanamadi", completionsError);
+    fail("Tamamlanmalar sıfırlanamadı", completionsError);
   }
 
   const { error: redemptionsError } = await supabase
@@ -1231,7 +1231,7 @@ export async function resetFamilyProgress(familyId: string) {
     .eq("family_id", familyId);
 
   if (redemptionsError) {
-    fail("Odul talepleri sifirlanamadi", redemptionsError);
+    fail("Ödül talepleri sıfırlanamadı", redemptionsError);
   }
 
   const { error: pointEventsError } = await supabase
@@ -1240,7 +1240,7 @@ export async function resetFamilyProgress(familyId: string) {
     .eq("family_id", familyId);
 
   if (pointEventsError) {
-    fail("Puan gecmisi sifirlanamadi", pointEventsError);
+    fail("Puan geçmişi sıfırlanamadı", pointEventsError);
   }
 
   const { error: usersError } = await supabase
@@ -1249,7 +1249,7 @@ export async function resetFamilyProgress(familyId: string) {
     .eq("family_id", familyId);
 
   if (usersError) {
-    fail("Kullanici puanlari sifirlanamadi", usersError);
+    fail("Kullanıcı puanları sıfırlanamadı", usersError);
   }
 }
 

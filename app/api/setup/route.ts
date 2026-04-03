@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       : [];
 
     if (!body.familyName?.trim() || !body.pin?.trim()) {
-      return jsonError("Aile adi ve PIN gerekli.");
+      return jsonError("Aile adı ve PIN gerekli.");
     }
 
     if (profiles.length === 0) {

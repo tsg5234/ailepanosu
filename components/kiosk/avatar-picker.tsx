@@ -169,7 +169,7 @@ export function AvatarPicker({
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900">Profil gorseli</div>
             <div className="text-xs leading-5 text-slate-500">
-              Hazir avatar sec, galeri yukle ya da kamerayla cek.
+              Hazır avatar seç, galeri yükle ya da kamerayla çek.
             </div>
           </div>
         </div>

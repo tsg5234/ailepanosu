@@ -60,8 +60,8 @@ interface SummaryHeroContent {
 
 const BLOCK_META: SummaryBlockMeta[] = [
   { id: "sabah", label: "Sabah", icon: Sunrise },
-  { id: "ogleden_sonra", label: "Ogleden Sonra", icon: Sun },
-  { id: "aksam", label: "Aksam", icon: Sunset }
+  { id: "ogleden_sonra", label: "Öğleden Sonra", icon: Sun },
+  { id: "aksam", label: "Akşam", icon: Sunset }
 ];
 
 function getVisibleBlocks(currentDayPart: ActiveTimeBlock) {
@@ -128,9 +128,9 @@ function getDateBadgeLabel(dateLabel: string, weekday: string) {
   const weekdayLabel =
     {
       pzt: "Pazartesi",
-      sal: "Sali",
-      car: "Carsamba",
-      per: "Persembe",
+      sal: "Salı",
+      car: "Çarşamba",
+      per: "Perşembe",
       cum: "Cuma",
       cts: "Cumartesi",
       paz: "Pazar"
@@ -150,15 +150,15 @@ function getSummaryHero(args: {
   if (!hasTasks) {
     if (currentDayPart === "gece") {
       return {
-        title: "Bugun hafifti",
-        copy: "Bugun sakin akti. Yarinin temposu icin enerji birikti.",
+        title: "Bugün hafifti",
+        copy: "Bugün sakin aktı. Yarının temposu için enerji birikti.",
         icon: Sparkles
       };
     }
 
     return {
-      title: "Kisa bir nefes arasi",
-      copy: "Bu bolumde gorev yok. Bir sonraki tur icin enerji toplaniyor.",
+      title: "Kısa bir nefes arası",
+      copy: "Bu bölümde görev yok. Bir sonraki tur için enerji toplanıyor.",
       icon: Sparkles
     };
   }
@@ -166,21 +166,21 @@ function getSummaryHero(args: {
   if (currentDayPart === "gece") {
     return completionRate === 100
       ? {
-          title: "Bugun super kapandi",
-          copy: "Sabahi, ogleyi ve aksami toparladin. Yarin da boyle akacak.",
+          title: "Bugün süper kapandı",
+          copy: "Sabahı, öğleyi ve akşamı toparladın. Yarın da böyle akacak.",
           icon: MoonStar
         }
       : {
-          title: "Bugunluk bu kadar",
-          copy: "Kalanlari yarin hallederiz. Simdi dinlenme zamani.",
+          title: "Bugünlük bu kadar",
+          copy: "Kalanları yarın hallederiz. Şimdi dinlenme zamanı.",
           icon: MoonStar
         };
   }
 
   if (currentDayPart === "aksam") {
     return {
-      title: "Aksam turu tamam",
-      copy: "Gunu guzel bir tempoyla kapattin. Gerisi keyif zamani.",
+      title: "Akşam turu tamam",
+      copy: "Günü güzel bir tempoyla kapattın. Gerisi keyif zamanı.",
       icon: Sunset
     };
   }
@@ -188,14 +188,14 @@ function getSummaryHero(args: {
   if (currentDayPart === "ogleden_sonra") {
     return {
       title: "Tempo tam yerinde",
-      copy: "Ogleden sonra gorevlerin bitti. Gun cok iyi akiyor.",
+      copy: "Öğleden sonra görevlerin bitti. Gün çok iyi akıyor.",
       icon: Sun
     };
   }
 
   return {
-    title: "Gune cok iyi girdin",
-    copy: "Sabah gorevlerin tamam. Bugunun ritmi simdiden oturdu.",
+    title: "Güne çok iyi girdin",
+    copy: "Sabah görevlerin tamam. Bugünün ritmi şimdiden oturdu.",
     icon: Sunrise
   };
 }
@@ -538,7 +538,7 @@ export function DaySummaryPanel({
               </div>
               <div className="mt-4 flex items-center justify-between gap-3 text-sm">
                 <div className="font-semibold text-[color:var(--text-muted)]">
-                  {block.remaining > 0 ? `${block.remaining} eksik gorev` : "Bu bolum temiz"}
+                  {block.remaining > 0 ? `${block.remaining} eksik görev` : "Bu bölüm temiz"}
                 </div>
                 <div className="rounded-full bg-white/80 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-[color:var(--text-main)]">
                   Detaylari Gor
@@ -619,7 +619,7 @@ export function DaySummaryPanel({
                               {task.title}
                             </div>
                             <div className="text-sm text-[color:var(--text-muted)]">
-                              {task.time_block === "her_zaman" ? "Gun Boyu" : selectedBlockMeta.label}
+                              {task.time_block === "her_zaman" ? "Gün Boyu" : selectedBlockMeta.label}
                             </div>
                           </div>
                           <div className="kid-points-badge shrink-0">
@@ -631,7 +631,7 @@ export function DaySummaryPanel({
                     </div>
                   ) : (
                     <div className="mt-5 rounded-[1.7rem] border border-emerald-100 bg-emerald-50 px-4 py-5 text-center text-sm font-semibold text-emerald-700">
-                      Bu bolum tertemiz. Eksik gorev kalmadi.
+                      Bu bölüm tertemiz. Eksik görev kalmadı.
                     </div>
                   )}
                 </div>

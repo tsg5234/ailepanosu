@@ -553,7 +553,7 @@ export function ParentPanel(props: ParentPanelProps) {
               value={valueLabel}
               onChange={(event) => setValueLabel(event.target.value)}
               disabled={!usesValueRewards}
-              placeholder="Ornek: TL, dakika, jeton"
+              placeholder="Örnek: TL, dakika, jeton"
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
           </label>
@@ -573,12 +573,12 @@ export function ParentPanel(props: ParentPanelProps) {
         <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
           {usesValueRewards ? (
             <>
-              Ornek gorunum: <span className="font-semibold text-slate-950">200 puan = {valuePreview}</span>
+              Örnek görünüm: <span className="font-semibold text-slate-950">200 puan = {valuePreview}</span>
             </>
           ) : usesGoalRewards ? (
-            <>Hedef oduller bu sekmede tanimlanir ve cocuk ekraninda bir sonraki hedef olarak gorunur.</>
+            <>Hedef ödüller bu sekmede tanımlanır ve çocuk ekranında bir sonraki hedef olarak görünür.</>
           ) : (
-            <>Bu modda cocuklar yalnizca puanlarini gorur. Puanin neye donustugunu ayrica gostermeyiz.</>
+            <>Bu modda çocuklar yalnızca puanlarını görür. Puanın neye dönüştüğünü ayrıca göstermeyiz.</>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -590,7 +590,7 @@ export function ParentPanel(props: ParentPanelProps) {
             Puan sistemini kaydet
           </button>
           <div className="text-sm text-[color:var(--text-muted)]">
-            Bu bolumdeki degisiklikler aile ayarlarina kaydedilir.
+            Bu bölümdeki değişiklikler aile ayarlarına kaydedilir.
           </div>
         </div>
       </div>
@@ -601,9 +601,9 @@ export function ParentPanel(props: ParentPanelProps) {
     <div className="flex min-h-0 flex-1 items-center justify-center p-8">
       <div className="glass-panel-strong max-w-xl rounded-[2rem] p-8 text-center">
         <ShieldCheck className="mx-auto h-12 w-12 text-teal-600" />
-        <h2 className="mt-4 text-3xl font-semibold">Yonetim girisi gerekli</h2>
+        <h2 className="mt-4 text-3xl font-semibold">Yönetim girişi gerekli</h2>
         <p className="mt-3 text-[color:var(--text-muted)]">
-          Yonetim araclari yalnizca PIN dogrulamasi ile acilir.
+          Yönetim araçları yalnızca PIN doğrulaması ile açılır.
         </p>
         <button
           onClick={onOpenLogin}
@@ -727,7 +727,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 <div>
                   <div className="text-lg font-semibold">{user.name}</div>
                   <div className="text-sm text-[color:var(--text-muted)]">
-                    {user.role === "ebeveyn" ? "Ebeveyn" : "Cocuk"} • {user.points} puan
+                    {user.role === "ebeveyn" ? "Ebeveyn" : "Çocuk"} • {user.points} puan
                   </div>
                 </div>
               </div>
@@ -1187,7 +1187,7 @@ export function ParentPanel(props: ParentPanelProps) {
       {rewardSystemPanel}
 
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card title="Hedef odul duzenleyici" description="Puanla acilacak odul hedeflerini buradan yonetin.">
+        <Card title="Hedef ödül düzenleyici" description="Puanla açılacak ödül hedeflerini buradan yönetin.">
           <div className="space-y-4">
             <label className="block space-y-2">
               <Label>Baslik</Label>
@@ -1232,7 +1232,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 disabled={working}
                 className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
               >
-                {rewardDraft.id ? "Guncelle" : "Odul ekle"}
+                {rewardDraft.id ? "Güncelle" : "Ödül ekle"}
               </button>
               <button
                 onClick={() => setRewardDraft(rewardDefaults)}
@@ -1245,14 +1245,14 @@ export function ParentPanel(props: ParentPanelProps) {
         </Card>
 
         <div className="space-y-5">
-          <Card title="Bekleyen talepler" description="Cocuk taleplerini onaylayin veya reddedin.">
+          <Card title="Bekleyen talepler" description="Çocuk taleplerini onaylayın veya reddedin.">
             <div className="space-y-3">
               {data?.redemptions
                 .filter((item) => item.status === "beklemede")
                 .map((item) => (
                   <div key={item.id} className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
                     <div className="text-lg font-semibold">
-                      {userLookup[item.user_id]?.name} � {rewardLookup[item.reward_id]?.title}
+                      {userLookup[item.user_id]?.name} • {rewardLookup[item.reward_id]?.title}
                     </div>
                     <div className="mt-1 text-sm text-[color:var(--text-muted)]">
                       {rewardLookup[item.reward_id]?.points_required} puan
@@ -1281,7 +1281,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </div>
           </Card>
 
-          <Card title="Hedef odul listesi" description="Duzenlemek icin bir hedefe dokunun.">
+          <Card title="Hedef ödül listesi" description="Düzenlemek için bir hedefe dokunun.">
             <div className="grid gap-3 md:grid-cols-2">
               {visibleRewards.map((reward) => (
                 <button
@@ -1298,13 +1298,13 @@ export function ParentPanel(props: ParentPanelProps) {
                 >
                   <div className="text-lg font-semibold">{reward.title}</div>
                   <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                    {reward.points_required} puan � {reward.approval_required ? "Onayli" : "Otomatik"}
+                    {reward.points_required} puan • {reward.approval_required ? "Onaylı" : "Otomatik"}
                   </div>
                 </button>
               ))}
               {visibleRewards.length === 0 ? (
                 <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                  Henuz hedef odul eklenmedi. Sinema, disarida yemek veya dondurma gibi hedefleri buradan tanimlayabilirsin.
+                  Henüz hedef ödül eklenmedi. Sinema, dışarıda yemek veya dondurma gibi hedefleri buradan tanımlayabilirsin.
                 </div>
               ) : null}
             </div>
@@ -1361,7 +1361,7 @@ export function ParentPanel(props: ParentPanelProps) {
       <div className="space-y-5">
         <Card
           title="Bugün tamamlananlar"
-          description={`${selectedPointUser?.name ?? "Secili kullanici"} icin yanlis isaretlenen gorevleri geri alin.`}
+          description={`${selectedPointUser?.name ?? "Seçili kullanıcı"} için yanlış işaretlenen görevleri geri alın.`}
         >
           <div className="space-y-3">
             {todaysCompletedTasks.map(({ completion, task }) => (
@@ -1388,7 +1388,7 @@ export function ParentPanel(props: ParentPanelProps) {
             ))}
             {todaysCompletedTasks.length === 0 ? (
               <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                Bugun bu kullanici icin tamamlanan gorev yok.
+                Bugün bu kullanıcı için tamamlanan görev yok.
               </div>
             ) : null}
           </div>
@@ -1462,7 +1462,7 @@ export function ParentPanel(props: ParentPanelProps) {
           </label>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block space-y-2">
-              <Label>Cocuk uyku saati</Label>
+              <Label>Çocuk uyku saati</Label>
               <input
                 type="time"
                 step="60"
@@ -1482,7 +1482,7 @@ export function ParentPanel(props: ParentPanelProps) {
               />
             </label>
             <label className="block space-y-2">
-              <Label>Gun reset saati</Label>
+              <Label>Gün reset saati</Label>
               <input
                 type="time"
                 step="60"
@@ -1493,7 +1493,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </label>
           </div>
           <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-            Kioskta cocuk ve ebeveyn icin ayri uyku saati kullanilir. Uyku saatinden sonra gorev yerine sade gun ozeti gosterilir. Gun reset saati ise yeni gunun hangi saatte baslayacagini belirler.
+            Kioskta çocuk ve ebeveyn için ayrı uyku saati kullanılır. Uyku saatinden sonra görev yerine sade gün özeti gösterilir. Gün reset saati ise yeni günün hangi saatte başlayacağını belirler.
           </div>
           <div className="flex flex-wrap gap-3">
             <button
@@ -1505,7 +1505,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </button>
             <button
               onClick={async () => {
-                if (!window.confirm("Tum puanlar, tamamlanan gorevler ve test gecmisi sifirlansin mi?")) {
+                if (!window.confirm("Tüm puanlar, tamamlanan görevler ve test geçmişi sıfırlansın mı?")) {
                   return;
                 }
                 await onResetProgress();
@@ -1513,7 +1513,7 @@ export function ParentPanel(props: ParentPanelProps) {
               disabled={working}
               className="rounded-[1.4rem] bg-amber-100 px-5 py-3 font-semibold text-amber-800 disabled:opacity-60"
             >
-              Testi sifirla
+              Testi sıfırla
             </button>
             <button
               onClick={onLogout}
@@ -1528,8 +1528,8 @@ export function ParentPanel(props: ParentPanelProps) {
       <Card title="Tablet notları" description="Kiosk kullanımına yönelik kısa hatırlatmalar.">
         <div className="space-y-3 text-[color:var(--text-muted)]">
           <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Yonetim paneli PIN ile korunur.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sifirla butonu puanlari ve tamamlananlari temizler, kullanicilari silmez.</div>
+          <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli PIN ile korunur.</div>
+          <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu puanları ve tamamlananları temizler, kullanıcıları silmez.</div>
           <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
         </div>
       </Card>
@@ -1552,7 +1552,7 @@ export function ParentPanel(props: ParentPanelProps) {
       <div className="flex min-h-0 flex-1 flex-col gap-4 xl:grid xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
         <aside className="glass-panel rounded-[2rem] p-3 lg:p-4 xl:sticky xl:top-0 xl:min-h-0">
           <div className="mb-4 px-2">
-            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yonetim paneli</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yönetim paneli</div>
             <div className="mt-2 text-2xl font-semibold">{data.family?.name}</div>
           </div>
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:mx-0 xl:block xl:space-y-2 xl:overflow-visible xl:px-0 xl:pb-0">
@@ -1583,7 +1583,7 @@ export function ParentPanel(props: ParentPanelProps) {
     <div className="glass-panel-strong flex h-full min-h-0 flex-col overflow-hidden rounded-none p-3 sm:rounded-[2.4rem] sm:p-4 lg:p-5">
       <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/60 px-1 pb-3 sm:mb-4 sm:pb-4">
         <div className="min-w-0">
-          <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yonetim paneli</div>
+          <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yönetim paneli</div>
           <div className="text-xl font-semibold sm:text-2xl">Aile kontrol merkezi</div>
         </div>
         {!standalone ? (

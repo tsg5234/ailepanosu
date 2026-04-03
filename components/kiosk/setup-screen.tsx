@@ -85,7 +85,7 @@ export function SetupScreen({
                 Aileni hazirla
               </h1>
               <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
-                Giris hesabin yonetim icin hazir. Aile adini yaz, PIN&apos;ini belirle ve gorunecek ebeveyn ile cocuk profillerini ekle.
+                Giriş hesabın yönetim için hazır. Aile adını yaz, PIN&apos;ini belirle ve görünecek ebeveyn ile çocuk profillerini ekle.
               </p>
             </div>
 
@@ -98,17 +98,17 @@ export function SetupScreen({
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Aile adi</span>
+              <span className="text-sm font-semibold text-slate-700">Aile adı</span>
               <input
                 value={familyName}
                 onChange={(event) => setFamilyName(event.target.value)}
                 className="w-full rounded-[1.6rem] border border-slate-200 bg-white px-4 py-4 text-lg outline-none transition focus:border-sky-400 focus:shadow-[0_0_0_4px_rgba(56,189,248,0.14)]"
-                placeholder="Ornek: Guler Ailesi"
+                placeholder="Örnek: Güler Ailesi"
               />
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Yonetim PIN</span>
+              <span className="text-sm font-semibold text-slate-700">Yönetim PIN</span>
               <input
                 value={pin}
                 onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -124,9 +124,9 @@ export function SetupScreen({
               <div>
                 <div className="flex items-center gap-2 text-lg font-black text-slate-900">
                   <Users className="h-5 w-5 text-emerald-600" />
-                  Baslangic profilleri
+                  Başlangıç profilleri
                 </div>
-                <div className="text-sm text-slate-600">Istedigin kadar kisi ekleyebilirsin.</div>
+                <div className="text-sm text-slate-600">İstediğin kadar kişi ekleyebilirsin.</div>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -144,7 +144,7 @@ export function SetupScreen({
                   className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-700"
                 >
                   <Plus className="h-4 w-4" />
-                  Cocuk ekle
+                  Çocuk ekle
                 </button>
               </div>
             </div>
@@ -152,7 +152,7 @@ export function SetupScreen({
             <div className="space-y-3">
               {profiles.length === 0 ? (
                 <div className="rounded-[1.7rem] border border-dashed border-slate-300 bg-white/80 p-5 text-center text-slate-600">
-                  Once ailende gorunecek bir profil ekle. Istersen ebeveyn, istersen cocuk profiliyle baslayabilirsin.
+                  Önce ailende görünecek bir profil ekle. İstersen ebeveyn, istersen çocuk profiliyle başlayabilirsin.
                 </div>
               ) : null}
               {profiles.map((profile, index) => (
@@ -166,7 +166,7 @@ export function SetupScreen({
                         Profil {index + 1}
                       </div>
                       <div className="text-sm font-semibold text-slate-700">
-                        {profile.role === PARENT_ROLE ? "Ebeveyn profili" : "Cocuk profili"}
+                        {profile.role === PARENT_ROLE ? "Ebeveyn profili" : "Çocuk profili"}
                       </div>
                     </div>
 
@@ -180,14 +180,14 @@ export function SetupScreen({
                       className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700"
                     >
                       <Trash2 className="h-4 w-4" />
-                      Kaldir
+                      Kaldır
                     </button>
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-4">
                       <label className="block space-y-2">
-                        <span className="text-sm font-semibold text-slate-700">Isim</span>
+                        <span className="text-sm font-semibold text-slate-700">İsim</span>
                         <input
                           value={profile.name}
                           onChange={(event) =>
@@ -217,7 +217,7 @@ export function SetupScreen({
                       {profile.role === CHILD_ROLE ? (
                         <label className="block space-y-2">
                           <span className="text-sm font-semibold text-slate-700">
-                            Dogum tarihi (opsiyonel)
+                            Doğum tarihi (opsiyonel)
                           </span>
                           <input
                             type="date"
@@ -252,7 +252,7 @@ export function SetupScreen({
                           className="w-full rounded-[1.3rem] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
                         >
                           <option value={PARENT_ROLE}>Ebeveyn</option>
-                          <option value={CHILD_ROLE}>Cocuk</option>
+                          <option value={CHILD_ROLE}>Çocuk</option>
                         </select>
                       </label>
 
@@ -304,9 +304,9 @@ export function SetupScreen({
 
           <label className="flex flex-col gap-4 rounded-[1.9rem] border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="font-semibold text-slate-900">Ornek gorev ve oduller ekle</div>
+              <div className="font-semibold text-slate-900">Örnek görev ve ödüller ekle</div>
               <div className="text-sm text-slate-600">
-                Profil eklemez; sadece baslangic gorevleri ve odulleri olusturur.
+                Profil eklemez; sadece başlangıç görevleri ve ödülleri oluşturur.
               </div>
             </div>
             <input

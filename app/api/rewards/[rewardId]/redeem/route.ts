@@ -15,12 +15,12 @@ export async function POST(request: Request, context: Context) {
     const body = (await request.json()) as { userId?: string };
 
     if (!body.userId?.trim()) {
-      return jsonError("Kullanici secilmedi.");
+      return jsonError("Kullanıcı seçilmedi.");
     }
 
     await requestReward(session.familyId, body.userId.trim(), rewardId);
     return jsonOk(await getDashboardSnapshot());
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Odul talebi gonderilemedi.", 500);
+    return jsonError(error instanceof Error ? error.message : "Ödül talebi gönderilemedi.", 500);
   }
 }

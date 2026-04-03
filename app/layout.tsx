@@ -3,7 +3,7 @@ import "@/app/globals.css";
 
 export const metadata: Metadata = {
   title: "Ev Programi",
-  description: "Turkce aile gorev yonetim uygulamasi",
+  description: "Türkçe aile görev yönetim uygulaması",
   applicationName: "Ev Programi",
   appleWebApp: {
     capable: true,

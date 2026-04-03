@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Ev Programi",
     short_name: "Ev Programi",
-    description: "Tablet odakli aile gorev yonetimi",
+    description: "Tablet odaklı aile görev yönetimi",
     display: "standalone",
     orientation: "landscape",
     background_color: "#f4efe8",

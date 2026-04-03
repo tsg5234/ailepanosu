@@ -329,19 +329,19 @@ function getDayPartMeta(timeBlock: TaskRecord["time_block"]) {
     case "ogleden_sonra":
       return {
         emoji: "🌞",
-        label: "Ogleden Sonra",
+        label: "Öğleden Sonra",
         className: "kid-daypart-pill-ogleden"
       };
     case "aksam":
       return {
         emoji: "🌙",
-        label: "Aksam",
+        label: "Akşam",
         className: "kid-daypart-pill-aksam"
       };
     default:
       return {
         emoji: "⭐",
-        label: "Gun Boyu",
+        label: "Gün Boyu",
         className: "kid-daypart-pill-sabah"
       };
   }
@@ -766,7 +766,7 @@ export function KioskApp({ mode }: KioskAppProps) {
           <div className="glass-panel-strong max-w-xl rounded-[2rem] p-8 text-center">
             <h1 className="text-3xl font-semibold">Profiller bulunamadi</h1>
             <p className="mt-3 text-[color:var(--text-muted)]">
-              Kullanici listesi bos. Supabase senkronizasyonunu yenileyip tekrar dene.
+              Kullanıcı listesi boş. Supabase senkronizasyonunu yenileyip tekrar dene.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               {allUsers.length > 0 ? (
@@ -781,7 +781,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                   }}
                   className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white"
                 >
-                  {data.session.parentAuthenticated ? "Yonetimi ac" : "Yonetim girisi"}
+                  {data.session.parentAuthenticated ? "Yönetimi aç" : "Yönetim girişi"}
                 </button>
               ) : null}
               <button
@@ -917,7 +917,7 @@ export function KioskApp({ mode }: KioskAppProps) {
     },
     {
       icon: data.session.parentAuthenticated ? PanelRightOpen : Lock,
-      label: data.session.parentAuthenticated ? "Yonetim" : "Yonetim",
+      label: data.session.parentAuthenticated ? "Yönetim" : "Yönetim",
       onClick: () => {
         if (data.session.parentAuthenticated) {
           openAdmin();
@@ -1015,7 +1015,7 @@ export function KioskApp({ mode }: KioskAppProps) {
               >
                 {profileUsers.map((user, index) => {
                   const userTheme = getProfileTheme(user.color);
-                  const roleLabel = user.role === "ebeveyn" ? "Ebeveyn" : "Cocuk";
+                  const roleLabel = user.role === "ebeveyn" ? "Ebeveyn" : "Çocuk";
 
                   return (
                     <motion.button
@@ -1185,7 +1185,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                             </div>
                           </div>
                           <div className="mt-2 text-sm font-medium text-slate-600">
-                            Gorevlerle biriktirdigin toplam deger
+                            Görevlerle biriktirdiğin toplam değer
                           </div>
                         </div>
                       </div>
@@ -1227,8 +1227,8 @@ export function KioskApp({ mode }: KioskAppProps) {
                           </div>
                           <div className="mt-1 text-sm text-slate-600">
                             {selectedUser.points >= nextRewardGoal.points_required
-                              ? "Hedefe ulastin, artik odul isteyebilirsin."
-                              : `${Math.max(nextRewardGoal.points_required - selectedUser.points, 0)} puan daha kaldi.`}
+                              ? "Hedefe ulaştın, artık ödül isteyebilirsin."
+                              : `${Math.max(nextRewardGoal.points_required - selectedUser.points, 0)} puan daha kaldı.`}
                           </div>
                         </div>
                       </div>
@@ -1320,7 +1320,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                               className="rounded-full px-3 py-1 text-xs font-semibold"
                               style={{ background: groupTone.badgeBg, color: groupTone.badgeText }}
                             >
-                              {completedCount === group.totalCount ? "Bolum tamam" : "Bugunun akisi"}
+                              {completedCount === group.totalCount ? "Bölüm tamam" : "Bugünün akışı"}
                             </span>
                           </div>
                         </div>
@@ -1337,7 +1337,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                               className="rounded-full px-3 py-1.5 text-sm font-semibold"
                               style={{ background: groupTone.badgeBg, color: groupTone.badgeText }}
                             >
-                              {group.tasks.length > 0 ? `${group.tasks.length} acik gorev` : "Acik gorev yok"}
+                              {group.tasks.length > 0 ? `${group.tasks.length} açık görev` : "Açık görev yok"}
                             </span>
                           </div>
                           <ChevronDown
@@ -1454,7 +1454,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                               </div>
                             ) : (
                               <div className="glass-panel rounded-[2rem] px-5 py-4 text-sm font-semibold text-white/78">
-                                Bu bolumde acik gorev kalmadi. Istersen diger bolumu acabilirsin.
+                                Bu bölümde açık görev kalmadı. İstersen diğer bölümü açabilirsin.
                               </div>
                             )}
                           </motion.div>
