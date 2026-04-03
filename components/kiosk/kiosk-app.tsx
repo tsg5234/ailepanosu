@@ -617,6 +617,7 @@ export function KioskApp({ mode }: KioskAppProps) {
 
     return Math.min(selectedUser.points / nextRewardGoal.points_required, 1);
   }, [nextRewardGoal, selectedUser]);
+  const rewardInsightCount = Number(rewardModeShowsValue) + Number(rewardModeShowsGoals && nextRewardGoal);
 
   if (loading && !data) {
     return (
@@ -1060,7 +1061,7 @@ export function KioskApp({ mode }: KioskAppProps) {
             </section>
 
             {rewardSystemConfig.mode !== "puan" && (rewardModeShowsValue || (rewardModeShowsGoals && nextRewardGoal)) ? (
-              <section className="mt-4 grid gap-3 lg:grid-cols-2">
+              <section className={`mt-4 grid gap-3 ${rewardInsightCount > 1 ? "lg:grid-cols-2" : ""}`}>
                 {rewardModeShowsValue ? (
                   <div className="glass-panel-strong rounded-[2rem] border border-white/20 px-5 py-4 text-white">
                     <div className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-white/68">

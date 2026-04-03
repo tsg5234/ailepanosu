@@ -275,6 +275,10 @@ export function ParentPanel(props: ParentPanelProps) {
     () => Object.fromEntries((data?.users ?? []).map((user) => [user.id, user])),
     [data?.users]
   );
+  const savedRewardSystemConfig = useMemo(
+    () => getRewardSystemConfig(data?.rewards ?? []),
+    [data?.rewards]
+  );
   const visibleRewards = useMemo(() => getVisibleRewards(data?.rewards ?? []), [data?.rewards]);
   const rewardModeOption = useMemo(
     () => REWARD_MODE_OPTIONS.find((item) => item.value === rewardMode),
@@ -498,11 +502,100 @@ export function ParentPanel(props: ParentPanelProps) {
       childSleepTime,
       parentSleepTime,
       dayResetTime,
+      rewardMode: savedRewardSystemConfig.mode,
+      valueLabel: savedRewardSystemConfig.valueLabel,
+      valuePerPoint: savedRewardSystemConfig.valuePerPoint
+    });
+  };
+
+  const handleSaveRewardSystem = async () => {
+    if (!data?.family) {
+      return;
+    }
+
+    await onUpdateSettings({
+      name: data.family.name,
+      theme: data.family.theme,
+      audioEnabled: data.family.audio_enabled,
+      childSleepTime: data.family.child_sleep_time || "22:00",
+      parentSleepTime: data.family.parent_sleep_time || "00:00",
+      dayResetTime: data.family.day_reset_time || "00:00",
       rewardMode,
       valueLabel: normalizedValueLabel,
       valuePerPoint: normalizedValuePerPoint
     });
   };
+
+  const rewardSystemPanel = (
+    <Card title="Puan sistemi" description="Puanin ailede nasil kullanilacagini buradan sec.">
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {REWARD_MODE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setRewardMode(option.value)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                rewardMode === option.value ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
+          {rewardModeOption?.description}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block space-y-2">
+            <Label>Karsilik birimi</Label>
+            <input
+              value={valueLabel}
+              onChange={(event) => setValueLabel(event.target.value)}
+              disabled={!usesValueRewards}
+              placeholder="Ornek: TL, dakika, jeton"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+          </label>
+          <label className="block space-y-2">
+            <Label>1 puan kac birim eder</Label>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={valuePerPoint}
+              onChange={(event) => setValuePerPoint(event.target.value)}
+              disabled={!usesValueRewards}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
+            />
+          </label>
+        </div>
+        <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
+          {usesValueRewards ? (
+            <>
+              Ornek gorunum: <span className="font-semibold text-slate-950">200 puan = {valuePreview}</span>
+            </>
+          ) : usesGoalRewards ? (
+            <>Hedef oduller bu sekmede tanimlanir ve cocuk ekraninda bir sonraki hedef olarak gorunur.</>
+          ) : (
+            <>Bu modda cocuklar yalnizca puanlarini gorur. Puanin neye donustugunu ayrica gostermeyiz.</>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleSaveRewardSystem}
+            disabled={working}
+            className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+          >
+            Puan sistemini kaydet
+          </button>
+          <div className="text-sm text-[color:var(--text-muted)]">
+            Bu bolumdeki degisiklikler aile ayarlarina kaydedilir.
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
 
   const lockedView = (
     <div className="flex min-h-0 flex-1 items-center justify-center p-8">
@@ -1090,140 +1183,136 @@ export function ParentPanel(props: ParentPanelProps) {
   );
 
   const rewardsTab = (
-    <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Hedef ödül düzenleyici" description="Puanla açılacak ödül hedeflerini buradan yönetin.">
-        <div className="space-y-4">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-            <div className="font-semibold text-slate-950">{rewardModeOption?.label ?? "Hedef ödüller"}</div>
-            <div className="mt-1">{rewardModeOption?.description}</div>
-            <div className="mt-2">
-              Puan sistemini Ayarlar sekmesinden değiştirebilirsin. Buradaki ödüller, hedef ödül modu açıkken çocuk ekranında görünür.
-            </div>
-          </div>
-          <label className="block space-y-2">
-            <Label>Başlık</Label>
-            <input
-              value={rewardDraft.title}
-              onChange={(event) => setRewardDraft((current) => ({ ...current, title: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-            />
-          </label>
-          <label className="block space-y-2">
-            <Label>Gerekli puan</Label>
-            <input
-              type="number"
-              min={10}
-              value={rewardDraft.pointsRequired}
-              onChange={(event) =>
-                setRewardDraft((current) => ({
-                  ...current,
-                  pointsRequired: Number(event.target.value || 0)
-                }))
-              }
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-            />
-          </label>
-          <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
-            <div>
-              <div className="font-semibold">Ebeveyn onayı gerekli</div>
-              <div className="text-sm text-[color:var(--text-muted)]">Kapalıysa otomatik verilir.</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={rewardDraft.approvalRequired}
-              onChange={(event) =>
-                setRewardDraft((current) => ({ ...current, approvalRequired: event.target.checked }))
-              }
-              className="h-5 w-5"
-            />
-          </label>
-          <div className="flex gap-3">
-            <button
-              onClick={() => onSaveReward(rewardDraft)}
-              disabled={working}
-              className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
-            >
-              {rewardDraft.id ? "Güncelle" : "Ödül ekle"}
-            </button>
-            <button
-              onClick={() => setRewardDraft(rewardDefaults)}
-              className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
-            >
-              Temizle
-            </button>
-          </div>
-        </div>
-      </Card>
+    <div className="space-y-5">
+      {rewardSystemPanel}
 
-      <div className="space-y-5">
-        <Card title="Bekleyen talepler" description="Çocuk taleplerini onaylayın veya reddedin.">
-          <div className="space-y-3">
-            {data?.redemptions
-              .filter((item) => item.status === "beklemede")
-              .map((item) => (
-                <div key={item.id} className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-                  <div className="text-lg font-semibold">
-                    {userLookup[item.user_id]?.name} • {rewardLookup[item.reward_id]?.title}
-                  </div>
-                  <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                    {rewardLookup[item.reward_id]?.points_required} puan
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      onClick={() => onResolveRedemption(item.id, "onaylandi")}
-                      className="rounded-full bg-emerald-100 px-4 py-2 font-semibold text-emerald-700"
-                    >
-                      Onayla
-                    </button>
-                    <button
-                      onClick={() => onResolveRedemption(item.id, "reddedildi")}
-                      className="rounded-full bg-rose-100 px-4 py-2 font-semibold text-rose-700"
-                    >
-                      Reddet
-                    </button>
-                  </div>
-                </div>
-              ))}
-            {data?.redemptions.filter((item) => item.status === "beklemede").length === 0 ? (
-              <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                Bekleyen talep yok.
-              </div>
-            ) : null}
-          </div>
-        </Card>
-
-        <Card title="Hedef ödül listesi" description="Düzenlemek için bir hedefe dokunun.">
-          <div className="grid gap-3 md:grid-cols-2">
-            {visibleRewards.map((reward) => (
-              <button
-                key={reward.id}
-                onClick={() =>
-                  setRewardDraft({
-                    id: reward.id,
-                    title: reward.title,
-                    pointsRequired: reward.points_required,
-                    approvalRequired: reward.approval_required
-                  })
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <Card title="Hedef odul duzenleyici" description="Puanla acilacak odul hedeflerini buradan yonetin.">
+          <div className="space-y-4">
+            <label className="block space-y-2">
+              <Label>Baslik</Label>
+              <input
+                value={rewardDraft.title}
+                onChange={(event) => setRewardDraft((current) => ({ ...current, title: event.target.value }))}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+              />
+            </label>
+            <label className="block space-y-2">
+              <Label>Gerekli puan</Label>
+              <input
+                type="number"
+                min={10}
+                value={rewardDraft.pointsRequired}
+                onChange={(event) =>
+                  setRewardDraft((current) => ({
+                    ...current,
+                    pointsRequired: Number(event.target.value || 0)
+                  }))
                 }
-                className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-left"
-              >
-                <div className="text-lg font-semibold">{reward.title}</div>
-                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                  {reward.points_required} puan • {reward.approval_required ? "Onaylı" : "Otomatik"}
-                </div>
-              </button>
-            ))}
-            {visibleRewards.length === 0 ? (
-              <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                Henüz hedef ödül eklenmedi. Sinema, dışarıda yemek veya dondurma gibi hedefleri buradan tanımlayabilirsin.
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
+              <div>
+                <div className="font-semibold">Ebeveyn onayi gerekli</div>
+                <div className="text-sm text-[color:var(--text-muted)]">Kapaliysa otomatik verilir.</div>
               </div>
-            ) : null}
+              <input
+                type="checkbox"
+                checked={rewardDraft.approvalRequired}
+                onChange={(event) =>
+                  setRewardDraft((current) => ({ ...current, approvalRequired: event.target.checked }))
+                }
+                className="h-5 w-5"
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => onSaveReward(rewardDraft)}
+                disabled={working}
+                className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+              >
+                {rewardDraft.id ? "Guncelle" : "Odul ekle"}
+              </button>
+              <button
+                onClick={() => setRewardDraft(rewardDefaults)}
+                className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
+              >
+                Temizle
+              </button>
+            </div>
           </div>
         </Card>
+
+        <div className="space-y-5">
+          <Card title="Bekleyen talepler" description="Cocuk taleplerini onaylayin veya reddedin.">
+            <div className="space-y-3">
+              {data?.redemptions
+                .filter((item) => item.status === "beklemede")
+                .map((item) => (
+                  <div key={item.id} className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+                    <div className="text-lg font-semibold">
+                      {userLookup[item.user_id]?.name} � {rewardLookup[item.reward_id]?.title}
+                    </div>
+                    <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                      {rewardLookup[item.reward_id]?.points_required} puan
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => onResolveRedemption(item.id, "onaylandi")}
+                        className="rounded-full bg-emerald-100 px-4 py-2 font-semibold text-emerald-700"
+                      >
+                        Onayla
+                      </button>
+                      <button
+                        onClick={() => onResolveRedemption(item.id, "reddedildi")}
+                        className="rounded-full bg-rose-100 px-4 py-2 font-semibold text-rose-700"
+                      >
+                        Reddet
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              {data?.redemptions.filter((item) => item.status === "beklemede").length === 0 ? (
+                <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
+                  Bekleyen talep yok.
+                </div>
+              ) : null}
+            </div>
+          </Card>
+
+          <Card title="Hedef odul listesi" description="Duzenlemek icin bir hedefe dokunun.">
+            <div className="grid gap-3 md:grid-cols-2">
+              {visibleRewards.map((reward) => (
+                <button
+                  key={reward.id}
+                  onClick={() =>
+                    setRewardDraft({
+                      id: reward.id,
+                      title: reward.title,
+                      pointsRequired: reward.points_required,
+                      approvalRequired: reward.approval_required
+                    })
+                  }
+                  className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-left"
+                >
+                  <div className="text-lg font-semibold">{reward.title}</div>
+                  <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                    {reward.points_required} puan � {reward.approval_required ? "Onayli" : "Otomatik"}
+                  </div>
+                </button>
+              ))}
+              {visibleRewards.length === 0 ? (
+                <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
+                  Henuz hedef odul eklenmedi. Sinema, disarida yemek veya dondurma gibi hedefleri buradan tanimlayabilirsin.
+                </div>
+              ) : null}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
-
   const pointsTab = (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
       <Card title="Puan düzenleme" description="Bonus ve düzeltme puanlarını manuel işleyin.">
@@ -1371,66 +1460,6 @@ export function ParentPanel(props: ParentPanelProps) {
               className="h-5 w-5"
             />
           </label>
-          <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white/85 p-4">
-            <div>
-              <div className="font-semibold">Puan sistemi</div>
-              <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                Ailenin puanı nasıl kullanacağını seç. Çocuk ekranında seçilen sistemin anlamı görünür.
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {REWARD_MODE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setRewardMode(option.value)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                    rewardMode === option.value ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
-              {rewardModeOption?.description}
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="block space-y-2">
-                <Label>Karşılık birimi</Label>
-                <input
-                  value={valueLabel}
-                  onChange={(event) => setValueLabel(event.target.value)}
-                  disabled={!usesValueRewards}
-                  placeholder="Örnek: TL, dakika, jeton"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
-                />
-              </label>
-              <label className="block space-y-2">
-                <Label>1 puan kaç birim eder</Label>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={valuePerPoint}
-                  onChange={(event) => setValuePerPoint(event.target.value)}
-                  disabled={!usesValueRewards}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
-                />
-              </label>
-            </div>
-            <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
-              {usesValueRewards ? (
-                <>
-                  Örnek görünüm: <span className="font-semibold text-slate-950">200 puan = {valuePreview}</span>
-                </>
-              ) : usesGoalRewards ? (
-                <>Hedef ödüller Ödüller sekmesinden tanımlanır ve çocuk ekranında bir sonraki hedef olarak görünür.</>
-              ) : (
-                <>Bu modda çocuklar yalnızca puanlarını görür. Puanın neye dönüştüğünü ayrıca göstermeyiz.</>
-              )}
-            </div>
-          </div>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block space-y-2">
               <Label>Cocuk uyku saati</Label>
@@ -1605,4 +1634,3 @@ export function ParentPanel(props: ParentPanelProps) {
     </AnimatePresence>
   );
 }
-
