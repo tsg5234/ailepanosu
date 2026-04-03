@@ -1063,35 +1063,105 @@ export function KioskApp({ mode }: KioskAppProps) {
             {rewardSystemConfig.mode !== "puan" && (rewardModeShowsValue || (rewardModeShowsGoals && nextRewardGoal)) ? (
               <section className={`mt-4 grid gap-3 ${rewardInsightCount > 1 ? "lg:grid-cols-2" : ""}`}>
                 {rewardModeShowsValue ? (
-                  <div className="rounded-[2rem] border border-white/70 bg-white/82 px-5 py-4 text-slate-900 shadow-[0_18px_38px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                    <div className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
-                      Biriktirdigin deger
-                    </div>
-                    <div className="mt-2 text-3xl font-black tracking-[-0.05em]">
-                      {convertedPointsValue}
-                    </div>
-                    <div className="mt-2 text-sm text-slate-500">
-                      {selectedUser.points} puanin su anki karsiligi.
+                  <div
+                    className="relative overflow-hidden rounded-[2rem] px-5 py-5 text-slate-950 backdrop-blur-xl"
+                    style={{
+                      backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 38%, ${withAlpha(selectedTheme.primary, "16")} 100%), linear-gradient(135deg, ${withAlpha(selectedTheme.primary, "22")} 0%, ${withAlpha(selectedTheme.secondary, "18")} 60%, ${withAlpha(selectedTheme.accent, "1F")} 100%)`,
+                      border: `1px solid ${withAlpha(selectedTheme.primary, "30")}`,
+                      boxShadow: `0 18px 42px ${withAlpha(selectedTheme.secondary, "18")}`
+                    }}
+                  >
+                    <div className="pointer-events-none absolute -left-10 top-[-2rem] h-36 w-36 rounded-full blur-3xl" style={{ background: withAlpha(selectedTheme.primary, "30") }} />
+                    <div className="pointer-events-none absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full blur-3xl" style={{ background: withAlpha(selectedTheme.accent, "28") }} />
+                    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] text-white shadow-[0_14px_28px_rgba(15,23,42,0.16)]"
+                          style={{
+                            backgroundImage: `linear-gradient(145deg, ${selectedTheme.primary} 0%, ${selectedTheme.secondary} 78%, ${selectedTheme.accent} 140%)`
+                          }}
+                        >
+                          <Star className="h-8 w-8 fill-current" />
+                        </div>
+                        <div>
+                          <div className="text-[0.72rem] font-black uppercase tracking-[0.22em] text-slate-500">
+                            Birikimin
+                          </div>
+                          <div className="mt-1 text-4xl font-black tracking-[-0.06em] sm:text-[2.8rem]">
+                            {convertedPointsValue}
+                          </div>
+                          <div className="mt-2 text-sm font-medium text-slate-600">
+                            Gorevlerle biriktirdigin toplam deger
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                        <div
+                          className="rounded-full px-3 py-1.5 text-sm font-semibold"
+                          style={{
+                            background: withAlpha(selectedTheme.primary, "14"),
+                            color: selectedTheme.text,
+                            boxShadow: `inset 0 0 0 1px ${withAlpha(selectedTheme.primary, "32")}`
+                          }}
+                        >
+                          {selectedUser.points} puan
+                        </div>
+                        <div className="rounded-full bg-white/78 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 ring-1 ring-white/90">
+                          Hazir birikim
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : null}
 
                 {rewardModeShowsGoals && nextRewardGoal ? (
-                  <div className="rounded-[2rem] border border-white/70 bg-white/82 px-5 py-4 text-slate-900 shadow-[0_18px_38px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                  <div
+                    className="relative overflow-hidden rounded-[2rem] px-5 py-5 text-slate-950 backdrop-blur-xl"
+                    style={{
+                      backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 34%, ${withAlpha(selectedTheme.accent, "14")} 100%), linear-gradient(135deg, ${withAlpha(selectedTheme.secondary, "1C")} 0%, ${withAlpha(selectedTheme.primary, "16")} 72%, ${withAlpha(selectedTheme.accent, "24")} 100%)`,
+                      border: `1px solid ${withAlpha(selectedTheme.secondary, "2E")}`,
+                      boxShadow: `0 18px 42px ${withAlpha(selectedTheme.primary, "15")}`
+                    }}
+                  >
+                    <div className="pointer-events-none absolute right-[-1.5rem] top-[-2.5rem] h-36 w-36 rounded-full blur-3xl" style={{ background: withAlpha(selectedTheme.secondary, "24") }} />
+                    <div className="pointer-events-none absolute bottom-[-3rem] left-[-1rem] h-36 w-36 rounded-full blur-3xl" style={{ background: withAlpha(selectedTheme.accent, "22") }} />
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
-                          Sonraki hedef
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.2rem] text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)]"
+                          style={{
+                            backgroundImage: `linear-gradient(145deg, ${selectedTheme.secondary} 0%, ${selectedTheme.primary} 74%, ${selectedTheme.accent} 140%)`
+                          }}
+                        >
+                          <PartyPopper className="h-6 w-6" />
                         </div>
-                        <div className="mt-2 text-2xl font-black tracking-[-0.05em]">
-                          {nextRewardGoal.title}
+                        <div>
+                          <div className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-slate-500">
+                            Sonraki hedef
+                          </div>
+                          <div className="mt-1 text-2xl font-black tracking-[-0.05em]">
+                            {nextRewardGoal.title}
+                          </div>
+                          <div className="mt-1 text-sm text-slate-600">
+                            {selectedUser.points >= nextRewardGoal.points_required
+                              ? "Hedefe ulastin, artik odul isteyebilirsin."
+                              : `${Math.max(nextRewardGoal.points_required - selectedUser.points, 0)} puan daha kaldi.`}
+                          </div>
                         </div>
                       </div>
-                      <div className="rounded-full px-3 py-1 text-sm font-semibold ring-1 ring-[color:var(--active-soft-strong)]/60 bg-[color:var(--active-soft)] text-[color:var(--active-text)]">
+                      <div
+                        className="rounded-full px-3 py-1 text-sm font-semibold"
+                        style={{
+                          background: withAlpha(selectedTheme.secondary, "12"),
+                          color: selectedTheme.text,
+                          boxShadow: `inset 0 0 0 1px ${withAlpha(selectedTheme.secondary, "28")}`
+                        }}
+                      >
                         {selectedUser.points} / {nextRewardGoal.points_required} puan
                       </div>
                     </div>
-                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/80 ring-1 ring-slate-200/80">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
@@ -1100,10 +1170,13 @@ export function KioskApp({ mode }: KioskAppProps) {
                         }}
                       />
                     </div>
-                    <div className="mt-2 text-sm text-slate-500">
-                      {selectedUser.points >= nextRewardGoal.points_required
-                        ? "Bu hedef acildi. Ailen onaylarsa odulu alabilirsin."
-                        : `${Math.max(nextRewardGoal.points_required - selectedUser.points, 0)} puan daha kaldi.`}
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                      <span className="rounded-full bg-white/82 px-3 py-1 ring-1 ring-white/90">
+                        Hedef ilerlemesi %{Math.round(nextRewardProgressRatio * 100)}
+                      </span>
+                      <span className="rounded-full bg-white/82 px-3 py-1 ring-1 ring-white/90">
+                        {nextRewardGoal.points_required} puanda acilir
+                      </span>
                     </div>
                   </div>
                 ) : null}
