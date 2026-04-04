@@ -8,6 +8,8 @@ import { isSupabaseConfigured } from "@/lib/env";
 import {
   adjustLocalPoints,
   bootstrapLocalApp,
+  changeLocalAccountPassword,
+  deleteLocalUser,
   getLocalDashboardSnapshot,
   loginLocalAccount,
   registerLocalAccount,
@@ -20,6 +22,7 @@ import {
   saveLocalTask,
   saveLocalUser,
   toggleLocalTaskCompletion,
+  updateLocalParentPin,
   updateLocalFamilySettings,
   verifyLocalParentPin
 } from "@/lib/local-db";
@@ -38,9 +41,11 @@ import {
 import { createAdminClient } from "@/lib/supabase";
 import type {
   AccountAuthPayload,
+  AccountPasswordChangePayload,
   DashboardPayload,
   FamilySettingsPayload,
   FamilyRecord,
+  ParentPinChangePayload,
   RewardSystemMode,
   RewardFormPayload,
   RewardRecord,
@@ -312,6 +317,15 @@ async function updateAccountUser(
   }
 }
 
+async function updateAccountPasswordHash(accountId: string, passwordHash: string) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("users").update({ avatar: passwordHash }).eq("id", accountId);
+
+  if (error) {
+    fail("Hesap şifresi güncellenemedi", error);
+  }
+}
+
 async function insertProfileUser(
   familyId: string,
   profile: {
@@ -443,6 +457,34 @@ export async function loginAccount(payload: AccountAuthPayload) {
   }
 
   return toAuthAccount(accountUser, username);
+}
+
+export async function changeAccountPassword(
+  accountId: string,
+  payload: AccountPasswordChangePayload
+) {
+  const currentPassword = payload.currentPassword ?? "";
+  const newPassword = payload.newPassword ?? "";
+
+  if (!isSupabaseConfigured()) {
+    return changeLocalAccountPassword(accountId, currentPassword, newPassword);
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error("Yeni şifre en az 6 karakter olmalı.");
+  }
+
+  const accountUser = await getAccountUserById(accountId);
+
+  if (!accountUser || !isAccountUserRecord(accountUser)) {
+    throw new Error("Hesap bulunamadı.");
+  }
+
+  if (!(await bcrypt.compare(currentPassword, accountUser.avatar))) {
+    throw new Error("Mevcut şifre hatalı.");
+  }
+
+  await updateAccountPasswordHash(accountId, await bcrypt.hash(newPassword, 10));
 }
 
 async function hasVisibleUsers(familyId: string) {
@@ -770,6 +812,38 @@ export async function verifyParentPin(familyId: string, pin: string) {
   return publicFamily;
 }
 
+export async function changeParentPin(
+  familyId: string,
+  payload: ParentPinChangePayload
+) {
+  const currentPin = payload.currentPin?.trim() ?? "";
+  const newPin = payload.newPin?.trim() ?? "";
+
+  if (!currentPin) {
+    throw new Error("Mevcut PIN gerekli.");
+  }
+
+  if (newPin.length < 4) {
+    throw new Error("Yeni PIN en az 4 haneli olmalı.");
+  }
+
+  if (!isSupabaseConfigured()) {
+    return updateLocalParentPin(familyId, currentPin, newPin);
+  }
+
+  await verifyParentPin(familyId, currentPin);
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("families")
+    .update({ parent_pin_hash: await bcrypt.hash(newPin, 10) })
+    .eq("id", familyId);
+
+  if (error) {
+    fail("Yönetim PIN'i güncellenemedi", error);
+  }
+}
+
 export async function saveUser(familyId: string, payload: UserFormPayload) {
   if (!isSupabaseConfigured()) {
     return saveLocalUser(familyId, payload);
@@ -821,6 +895,79 @@ export async function saveUser(familyId: string, payload: UserFormPayload) {
     birthdate: payload.birthdate || null,
     visibleInKiosk: true
   });
+}
+
+export async function deleteUserProfile(familyId: string, userId: string) {
+  if (!isSupabaseConfigured()) {
+    return deleteLocalUser(familyId, userId);
+  }
+
+  const supabase = createAdminClient();
+  const { data: users, error: usersError } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("family_id", familyId)
+    .order("created_at");
+
+  if (usersError) {
+    fail("Profiller alınamadı", usersError);
+  }
+
+  const visibleProfiles = ((users ?? []) as Array<{ id: string; name: string }>).filter(
+    (user) => !isAccountMarkerName(user.name)
+  );
+  const targetUser = visibleProfiles.find((user) => user.id === userId);
+
+  if (!targetUser) {
+    throw new Error("Profil bulunamadı.");
+  }
+
+  if (visibleProfiles.length <= 1) {
+    throw new Error("Son profil silinemez.");
+  }
+
+  const { data: tasks, error: tasksError } = await supabase
+    .from("tasks")
+    .select("id, assigned_to")
+    .eq("family_id", familyId)
+    .contains("assigned_to", [userId]);
+
+  if (tasksError) {
+    fail("Profille ilişkili görevler alınamadı", tasksError);
+  }
+
+  const taskMutations = (tasks ?? []).map((task) => {
+    const remainingAssignedTo = ((task.assigned_to as string[] | null) ?? []).filter(
+      (assignedId) => assignedId !== userId
+    );
+
+    if (remainingAssignedTo.length === 0) {
+      return supabase.from("tasks").delete().eq("id", task.id).eq("family_id", familyId);
+    }
+
+    return supabase
+      .from("tasks")
+      .update({ assigned_to: remainingAssignedTo })
+      .eq("id", task.id)
+      .eq("family_id", familyId);
+  });
+
+  const mutationResults = await Promise.all(taskMutations);
+  const failedTaskMutation = mutationResults.find((result) => result.error);
+
+  if (failedTaskMutation?.error) {
+    fail("Profil görevlerden kaldırılamadı", failedTaskMutation.error);
+  }
+
+  const { error: deleteError } = await supabase
+    .from("users")
+    .delete()
+    .eq("id", userId)
+    .eq("family_id", familyId);
+
+  if (deleteError) {
+    fail("Profil silinemedi", deleteError);
+  }
 }
 
 export async function saveTask(familyId: string, payload: TaskFormPayload) {

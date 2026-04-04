@@ -441,13 +441,16 @@ export function KioskApp({ mode }: KioskAppProps) {
     completeTask,
     undoTaskCompletion,
     saveUser,
+    deleteUser,
     saveTask,
     reorderTasks,
     saveReward,
     resolveRedemption,
     adjustPoints,
     resetProgress,
-    updateFamilySettings
+    updateFamilySettings,
+    changeAccountPassword,
+    changeParentPin
   } = useDashboardStore();
 
   useEffect(() => {
@@ -821,6 +824,7 @@ export function KioskApp({ mode }: KioskAppProps) {
           onClose={logoutParent}
           onOpenLogin={openLogin}
           onSaveUser={saveUser}
+          onDeleteUser={deleteUser}
           onSaveTask={saveTask}
           onReorderTasks={reorderTasks}
           onSaveReward={saveReward}
@@ -829,6 +833,8 @@ export function KioskApp({ mode }: KioskAppProps) {
           onUndoTaskCompletion={undoTaskCompletion}
           onResetProgress={resetProgress}
           onUpdateSettings={updateFamilySettings}
+          onChangeAccountPassword={changeAccountPassword}
+          onChangeParentPin={changeParentPin}
           onLogout={logoutParent}
         />
       </>
@@ -860,6 +866,7 @@ export function KioskApp({ mode }: KioskAppProps) {
           onClose={() => undefined}
           onOpenLogin={openLogin}
           onSaveUser={saveUser}
+          onDeleteUser={deleteUser}
           onSaveTask={saveTask}
           onReorderTasks={reorderTasks}
           onSaveReward={saveReward}
@@ -868,6 +875,8 @@ export function KioskApp({ mode }: KioskAppProps) {
           onUndoTaskCompletion={undoTaskCompletion}
           onResetProgress={resetProgress}
           onUpdateSettings={updateFamilySettings}
+          onChangeAccountPassword={changeAccountPassword}
+          onChangeParentPin={changeParentPin}
           onLogout={logoutParent}
         />
         <PinModal
@@ -1495,6 +1504,7 @@ export function KioskApp({ mode }: KioskAppProps) {
         onClose={logoutParent}
         onOpenLogin={openLogin}
         onSaveUser={saveUser}
+        onDeleteUser={deleteUser}
         onSaveTask={saveTask}
         onReorderTasks={reorderTasks}
         onSaveReward={saveReward}
@@ -1503,6 +1513,8 @@ export function KioskApp({ mode }: KioskAppProps) {
         onUndoTaskCompletion={undoTaskCompletion}
         onResetProgress={resetProgress}
         onUpdateSettings={updateFamilySettings}
+        onChangeAccountPassword={changeAccountPassword}
+        onChangeParentPin={changeParentPin}
         onLogout={logoutParent}
       />
 

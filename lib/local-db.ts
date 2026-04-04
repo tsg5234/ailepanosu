@@ -233,6 +233,28 @@ export async function loginLocalAccount(username: string, password: string) {
   };
 }
 
+export async function changeLocalAccountPassword(
+  accountId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  const account = getState().accounts.find((item) => item.id === accountId);
+
+  if (!account) {
+    throw new Error("Hesap bulunamadı.");
+  }
+
+  if (!compareSync(currentPassword, account.password_hash)) {
+    throw new Error("Mevcut şifre hatalı.");
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error("Yeni şifre en az 6 karakter olmalı.");
+  }
+
+  account.password_hash = hashSync(newPassword, 10);
+}
+
 export async function bootstrapLocalApp(accountId: string, payload: SetupPayload) {
   const state = getState();
   const account = state.accounts.find((item) => item.id === accountId);
@@ -318,6 +340,24 @@ export async function verifyLocalParentPin(familyId: string, pin: string) {
   return getPublicFamilyRecord(family);
 }
 
+export async function updateLocalParentPin(
+  familyId: string,
+  currentPin: string,
+  newPin: string
+) {
+  const family = getFamilyState(familyId).family;
+
+  if (!compareSync(currentPin, family.parent_pin_hash)) {
+    throw new Error("Mevcut PIN hatalı.");
+  }
+
+  if (newPin.trim().length < 4) {
+    throw new Error("Yeni PIN en az 4 haneli olmalı.");
+  }
+
+  family.parent_pin_hash = hashSync(newPin.trim(), 10);
+}
+
 export async function saveLocalUser(familyId: string, payload: UserFormPayload) {
   const familyState = getFamilyState(familyId);
 
@@ -349,6 +389,31 @@ export async function saveLocalUser(familyId: string, payload: UserFormPayload) 
     points: 0,
     created_at: nowIso()
   });
+}
+
+export async function deleteLocalUser(familyId: string, userId: string) {
+  const familyState = getFamilyState(familyId);
+  const user = familyState.users.find((item) => item.id === userId);
+
+  if (!user) {
+    throw new Error("Profil bulunamadı.");
+  }
+
+  if (familyState.users.length <= 1) {
+    throw new Error("Son profil silinemez.");
+  }
+
+  familyState.tasks = familyState.tasks
+    .map((task) => ({
+      ...task,
+      assigned_to: task.assigned_to.filter((assignedId) => assignedId !== userId)
+    }))
+    .filter((task) => task.assigned_to.length > 0);
+
+  familyState.completions = familyState.completions.filter((item) => item.user_id !== userId);
+  familyState.redemptions = familyState.redemptions.filter((item) => item.user_id !== userId);
+  familyState.pointEvents = familyState.pointEvents.filter((item) => item.user_id !== userId);
+  familyState.users = familyState.users.filter((item) => item.id !== userId);
 }
 
 export async function saveLocalTask(familyId: string, payload: TaskFormPayload) {

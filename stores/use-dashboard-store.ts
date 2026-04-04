@@ -3,8 +3,10 @@
 import { create } from "zustand";
 import type {
   AccountAuthPayload,
+  AccountPasswordChangePayload,
   DashboardPayload,
   FamilySettingsPayload,
+  ParentPinChangePayload,
   RewardFormPayload,
   TaskFormPayload,
   UserFormPayload
@@ -61,6 +63,7 @@ interface DashboardStore {
   ) => Promise<void>;
   requestReward: (rewardId: string, userId: string) => Promise<void>;
   saveUser: (payload: UserFormPayload) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
   saveTask: (payload: TaskFormPayload) => Promise<void>;
   reorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   saveReward: (payload: RewardFormPayload) => Promise<void>;
@@ -71,6 +74,8 @@ interface DashboardStore {
   adjustPoints: (userId: string, delta: number, note: string) => Promise<void>;
   resetProgress: () => Promise<void>;
   updateFamilySettings: (payload: FamilySettingsPayload) => Promise<void>;
+  changeAccountPassword: (payload: AccountPasswordChangePayload) => Promise<void>;
+  changeParentPin: (payload: ParentPinChangePayload) => Promise<void>;
 }
 
 async function requestJson<T>(url: string, init?: RequestInit) {
@@ -439,6 +444,28 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       });
     }
   },
+  async deleteUser(userId) {
+    set({ working: true });
+
+    try {
+      const data = await requestJson<DashboardPayload>(`/api/users/${userId}`, {
+        method: "DELETE"
+      });
+      withDashboardState(set, data);
+      set({
+        working: false,
+        toast: { kind: "basari", message: "Profil silindi." }
+      });
+    } catch (error) {
+      set({
+        working: false,
+        toast: {
+          kind: "hata",
+          message: error instanceof Error ? error.message : "Profil silinemedi."
+        }
+      });
+    }
+  },
   async saveTask(payload) {
     set({ working: true });
 
@@ -606,6 +633,51 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         toast: {
           kind: "hata",
           message: error instanceof Error ? error.message : "Aile ayarlari kaydedilemedi."
+        }
+      });
+    }
+  },
+  async changeAccountPassword(payload) {
+    set({ working: true });
+
+    try {
+      await requestJson<{ success: boolean }>("/api/auth/account-password", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      set({
+        working: false,
+        toast: { kind: "basari", message: "Hesap şifresi güncellendi." }
+      });
+    } catch (error) {
+      set({
+        working: false,
+        toast: {
+          kind: "hata",
+          message: error instanceof Error ? error.message : "Şifre güncellenemedi."
+        }
+      });
+    }
+  },
+  async changeParentPin(payload) {
+    set({ working: true });
+
+    try {
+      const data = await requestJson<DashboardPayload>("/api/family/pin", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      withDashboardState(set, data);
+      set({
+        working: false,
+        toast: { kind: "basari", message: "Yönetim PIN'i güncellendi." }
+      });
+    } catch (error) {
+      set({
+        working: false,
+        toast: {
+          kind: "hata",
+          message: error instanceof Error ? error.message : "PIN güncellenemedi."
         }
       });
     }

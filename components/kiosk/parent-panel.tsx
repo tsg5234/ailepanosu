@@ -21,8 +21,10 @@ import {
 import { isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type {
+  AccountPasswordChangePayload,
   DashboardPayload,
   FamilySettingsPayload,
+  ParentPinChangePayload,
   RewardFormPayload,
   RewardSystemMode,
   TaskFormPayload,
@@ -41,6 +43,7 @@ interface ParentPanelProps {
   onClose: () => void;
   onOpenLogin: () => void;
   onSaveUser: (payload: UserFormPayload) => Promise<void>;
+  onDeleteUser: (userId: string) => Promise<void>;
   onSaveTask: (payload: TaskFormPayload) => Promise<void>;
   onReorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   onSaveReward: (payload: RewardFormPayload) => Promise<void>;
@@ -54,6 +57,8 @@ interface ParentPanelProps {
   ) => Promise<void>;
   onResetProgress: () => Promise<void>;
   onUpdateSettings: (payload: FamilySettingsPayload) => Promise<void>;
+  onChangeAccountPassword: (payload: AccountPasswordChangePayload) => Promise<void>;
+  onChangeParentPin: (payload: ParentPinChangePayload) => Promise<void>;
   onLogout: () => Promise<void>;
 }
 
@@ -185,6 +190,7 @@ export function ParentPanel(props: ParentPanelProps) {
     onClose,
     onOpenLogin,
     onSaveUser,
+    onDeleteUser,
     onSaveTask,
     onReorderTasks,
     onSaveReward,
@@ -193,6 +199,8 @@ export function ParentPanel(props: ParentPanelProps) {
     onUndoTaskCompletion,
     onResetProgress,
     onUpdateSettings,
+    onChangeAccountPassword,
+    onChangeParentPin,
     onLogout
   } = props;
 
@@ -217,6 +225,12 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [showTaskPotentialDetails, setShowTaskPotentialDetails] = useState(false);
   const [taskUserView, setTaskUserView] = useState<string>("tum");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
 
   useEffect(() => {
     if (!data?.family) {
@@ -526,6 +540,61 @@ export function ParentPanel(props: ParentPanelProps) {
     });
   };
 
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      window.alert("Mevcut şifre ve yeni şifre gerekli.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      window.alert("Yeni şifre tekrar alanı eşleşmiyor.");
+      return;
+    }
+
+    await onChangeAccountPassword({
+      currentPassword,
+      newPassword
+    });
+
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleChangePin = async () => {
+    if (!currentPin || !newPin) {
+      window.alert("Mevcut PIN ve yeni PIN gerekli.");
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      window.alert("Yeni PIN tekrar alanı eşleşmiyor.");
+      return;
+    }
+
+    await onChangeParentPin({
+      currentPin,
+      newPin
+    });
+
+    setCurrentPin("");
+    setNewPin("");
+    setConfirmPin("");
+  };
+
+  const handleDeleteSelectedUser = async () => {
+    if (!userDraft.id) {
+      return;
+    }
+
+    if (!window.confirm("Bu profili silmek istediğine emin misin? Bu profile bağlı görev kayıtları da güncellenir.")) {
+      return;
+    }
+
+    await onDeleteUser(userDraft.id);
+    setUserDraft(userDefaults);
+  };
+
   const rewardSystemPanel = (
     <Card title="Puan sistemi" description="Puanin ailede nasil kullanilacagini buradan sec.">
       <div className="space-y-4">
@@ -686,6 +755,15 @@ export function ParentPanel(props: ParentPanelProps) {
             >
               {userDraft.id ? "Güncelle" : "Kullanıcı ekle"}
             </button>
+            {userDraft.id ? (
+              <button
+                onClick={handleDeleteSelectedUser}
+                disabled={working}
+                className="rounded-[1.4rem] bg-rose-100 px-5 py-3 font-semibold text-rose-700 disabled:opacity-60"
+              >
+                Profili sil
+              </button>
+            ) : null}
             <button
               onClick={() => setUserDraft(userDefaults)}
               className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
@@ -1525,14 +1603,117 @@ export function ParentPanel(props: ParentPanelProps) {
         </div>
       </Card>
 
-      <Card title="Tablet notları" description="Kiosk kullanımına yönelik kısa hatırlatmalar.">
-        <div className="space-y-3 text-[color:var(--text-muted)]">
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli PIN ile korunur.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu puanları ve tamamlananları temizler, kullanıcıları silmez.</div>
-          <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
-        </div>
-      </Card>
+      <div className="space-y-5">
+        <Card title="Güvenlik" description="Hesap şifresini ve yönetim PIN'ini buradan güncelle.">
+          <div className="space-y-5">
+            <div className="space-y-4 rounded-[1.6rem] border border-slate-200 bg-white/70 p-4">
+              <div>
+                <div className="text-base font-semibold">Hesap şifresi</div>
+                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  {data?.session.username ? `${data.session.username} hesabının giriş şifresini değiştir.` : "Giriş şifresini değiştir."}
+                </div>
+              </div>
+              <label className="block space-y-2">
+                <Label>Mevcut şifre</Label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  autoComplete="current-password"
+                />
+              </label>
+              <label className="block space-y-2">
+                <Label>Yeni şifre</Label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  autoComplete="new-password"
+                />
+              </label>
+              <label className="block space-y-2">
+                <Label>Yeni şifre tekrar</Label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  autoComplete="new-password"
+                />
+              </label>
+              <button
+                onClick={handleChangePassword}
+                disabled={working}
+                className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+              >
+                Şifreyi güncelle
+              </button>
+            </div>
+
+            <div className="space-y-4 rounded-[1.6rem] border border-slate-200 bg-white/70 p-4">
+              <div>
+                <div className="text-base font-semibold">Yönetim PIN&apos;i</div>
+                <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  Yönetim paneline girişte kullanılan PIN&apos;i değiştir.
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <label className="block space-y-2">
+                  <Label>Mevcut PIN</Label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={currentPin}
+                    onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <Label>Yeni PIN</Label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={newPin}
+                    onChange={(event) => setNewPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <Label>Yeni PIN tekrar</Label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={confirmPin}
+                    onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  />
+                </label>
+              </div>
+              <button
+                onClick={handleChangePin}
+                disabled={working}
+                className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+              >
+                PIN&apos;i güncelle
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Tablet notları" description="Kiosk kullanımına yönelik kısa hatırlatmalar.">
+          <div className="space-y-3 text-[color:var(--text-muted)]">
+            <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
+            <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli PIN ile korunur.</div>
+            <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu puanları ve tamamlananları temizler, kullanıcıları silmez.</div>
+            <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 

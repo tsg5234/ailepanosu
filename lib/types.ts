@@ -135,6 +135,16 @@ export interface AccountAuthPayload {
   password: string;
 }
 
+export interface AccountPasswordChangePayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ParentPinChangePayload {
+  currentPin: string;
+  newPin: string;
+}
+
 export interface UserFormPayload {
   id?: string;
   name: string;
