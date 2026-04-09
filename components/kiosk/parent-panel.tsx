@@ -221,7 +221,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [valueLabel, setValueLabel] = useState(DEFAULT_VALUE_LABEL);
   const [valuePerPoint, setValuePerPoint] = useState(String(DEFAULT_VALUE_PER_POINT));
   const [pointsUserId, setPointsUserId] = useState("");
-  const [pointsDelta, setPointsDelta] = useState(10);
+  const [pointsDeltaInput, setPointsDeltaInput] = useState("10");
   const [pointsNote, setPointsNote] = useState("Bonus puan");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
@@ -456,6 +456,9 @@ export function ParentPanel(props: ParentPanelProps) {
     () => (taskUserView === "tum" ? undefined : todaysPotentialByUser.find((item) => item.user.id === taskUserView)),
     [taskUserView, todaysPotentialByUser]
   );
+  const parsedPointsDelta =
+    pointsDeltaInput.trim() !== "" && pointsDeltaInput !== "-" ? Number(pointsDeltaInput) : null;
+  const canSubmitPoints = parsedPointsDelta !== null && Number.isFinite(parsedPointsDelta);
   const selectedPointUser = pointsUserId ? userLookup[pointsUserId] : undefined;
   const todaysCompletedTasks = useMemo(() => {
     if (!data || !pointsUserId) {
@@ -1414,9 +1417,16 @@ export function ParentPanel(props: ParentPanelProps) {
           <label className="block space-y-2">
             <Label>Puan farkı</Label>
             <input
-              type="number"
-              value={pointsDelta}
-              onChange={(event) => setPointsDelta(Number(event.target.value || 0))}
+              type="text"
+              inputMode="numeric"
+              value={pointsDeltaInput}
+              onChange={(event) => {
+                const nextValue = event.target.value.replace(",", ".");
+
+                if (/^-?\d*$/.test(nextValue)) {
+                  setPointsDeltaInput(nextValue);
+                }
+              }}
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
@@ -1424,14 +1434,14 @@ export function ParentPanel(props: ParentPanelProps) {
             <Label>Hızlı puan seç</Label>
             <div className="flex flex-wrap gap-2">
               {POINT_DELTA_PRESETS.map((delta) => {
-                const active = pointsDelta === delta;
+                const active = parsedPointsDelta === delta;
                 const negative = delta < 0;
 
                 return (
                   <button
                     key={delta}
                     type="button"
-                    onClick={() => setPointsDelta(delta)}
+                    onClick={() => setPointsDeltaInput(String(delta))}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                       active
                         ? negative
@@ -1460,8 +1470,14 @@ export function ParentPanel(props: ParentPanelProps) {
             />
           </label>
           <button
-            onClick={() => onAdjustPoints(pointsUserId, pointsDelta, pointsNote)}
-            disabled={working}
+            onClick={() => {
+              if (!canSubmitPoints || parsedPointsDelta === null) {
+                return;
+              }
+
+              onAdjustPoints(pointsUserId, parsedPointsDelta, pointsNote);
+            }}
+            disabled={working || !canSubmitPoints}
             className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
           >
             Puani işle
