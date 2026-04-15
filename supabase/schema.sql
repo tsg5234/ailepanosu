@@ -186,7 +186,7 @@ begin
     raise exception 'Aile bilgisi eşleşmedi';
   end if;
 
-  if not v_reward.approval_required and v_user.points < v_reward.points_required then
+  if v_user.points < v_reward.points_required then
     raise exception 'Yeterli puan yok';
   end if;
 
