@@ -347,7 +347,7 @@ async function insertProfileUser(
   };
   const { data, error } = await supabase
     .from("users")
-    .insert({ ...base, role: "ebeveyn" })
+    .insert({ ...base, role: profile.role })
     .select("*")
     .single();
 
@@ -380,7 +380,7 @@ async function updateProfileUser(
   };
   const { error } = await supabase
     .from("users")
-    .update({ ...base, role: "ebeveyn" })
+    .update({ ...base, role: profile.role })
     .eq("id", userId)
     .eq("family_id", familyId);
 
