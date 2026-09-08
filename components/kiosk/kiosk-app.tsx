@@ -905,12 +905,12 @@ export function KioskApp({ mode }: KioskAppProps) {
       />
 
       <AnimatePresence>
-        {toast && toast.kind !== "basari" ? (
+        {toast?.kind === "hata" ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className={`command-toast ${toast.kind === "hata" ? "is-error" : "is-info"}`}
+            className="command-toast is-error"
           >
             {toast.message}
           </motion.div>
