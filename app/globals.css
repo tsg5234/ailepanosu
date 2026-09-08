@@ -4291,8 +4291,9 @@ button {
 }
 
 .command-profile-task.is-complete .command-profile-task-check {
-  background: #6b7f86;
-  border-color: #6b7f86;
+  background: var(--member-accent);
+  border-color: var(--member-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--member-accent), transparent 82%);
 }
 
 .command-profile-task-icon {
