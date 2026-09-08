@@ -3526,36 +3526,20 @@ button {
 }
 
 .command-title-mark {
-  position: relative;
   display: grid;
-  width: 3.15rem;
-  height: 3.15rem;
+  width: 3.25rem;
+  height: 3.25rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--selected-accent), #151712 12%);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--selected-accent), #ffffff 64%), #fffef9 78%),
-    #fffef9;
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--selected-accent), transparent 78%);
-  color: #151712;
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: rgba(255, 254, 249, 0.86);
+  box-shadow: 0 12px 28px rgba(21, 23, 18, 0.1);
 }
 
-.command-title-mark-home {
-  width: 1.65rem;
-  height: 1.65rem;
-  stroke-width: 2.4;
-}
-
-.command-title-mark-check {
-  position: absolute;
-  right: 0.38rem;
-  bottom: 0.34rem;
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 1px solid #fffef9;
-  background: var(--selected-accent);
-  color: #fffef9;
-  padding: 0.08rem;
+.command-title-mark img {
+  width: 2.9rem;
+  height: 2.9rem;
+  object-fit: contain;
 }
 
 .command-header h1 {

@@ -9,6 +9,7 @@ import {
   useState
 } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import {
   CalendarDays,
   Check,
@@ -208,8 +209,7 @@ function DashboardHeader({
     <header className="command-header">
       <div className="command-title-lockup">
         <div className="command-title-mark" aria-hidden="true">
-          <Home className="command-title-mark-home" />
-          <Check className="command-title-mark-check" />
+          <Image src="/aile-panosu-logo.png" alt="" width={52} height={52} priority />
         </div>
         <h1>{family?.name ?? "Aile Panosu"}</h1>
       </div>
