@@ -24,7 +24,6 @@ import {
   Users
 } from "lucide-react";
 import { formatAllowance } from "@/lib/allowance";
-import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import { AccountScreen } from "@/components/kiosk/account-screen";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { ParentPanel } from "@/components/kiosk/parent-panel";
@@ -429,7 +428,6 @@ function ProfilesDirectory({
                       >
                         {pending ? <RefreshCw className="h-4 w-4 animate-spin" /> : completed ? <Check className="h-5 w-5" /> : null}
                       </button>
-                      <span className="command-profile-task-icon">{task.icon || DEFAULT_TASK_ICON}</span>
                       <strong>{task.title}</strong>
                       <span className="command-profile-task-meta">
                         <b>{formatAllowance(task.points)}</b>
