@@ -2,6 +2,8 @@ import "server-only";
 
 import { compareSync, hashSync } from "bcryptjs";
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import type { AppSession } from "@/lib/auth";
 import {
   buildRewardSystemConfigRewards,
@@ -64,12 +66,50 @@ declare global {
   var evProgramLocalState: LocalState | undefined;
 }
 
+const LOCAL_DATA_DIR = path.join(process.cwd(), ".local-data");
+const LOCAL_DB_PATH = path.join(LOCAL_DATA_DIR, "local-db.json");
+
 function nowIso() {
   return new Date().toISOString();
 }
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function createEmptyState(): LocalState {
+  return {
+    accounts: [],
+    families: {}
+  };
+}
+
+function readStateFromDisk(): LocalState {
+  if (!existsSync(LOCAL_DB_PATH)) {
+    return createEmptyState();
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(LOCAL_DB_PATH, "utf8")) as LocalState;
+
+    return {
+      accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
+      families: parsed.families && typeof parsed.families === "object" ? parsed.families : {}
+    };
+  } catch {
+    return createEmptyState();
+  }
+}
+
+function persistState() {
+  const state = globalThis.evProgramLocalState;
+
+  if (!state) {
+    return;
+  }
+
+  mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+  writeFileSync(LOCAL_DB_PATH, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
 function getDashboardSession(session: AppSession | null): DashboardPayload["session"] {
@@ -104,10 +144,7 @@ function getEmptyDashboardSnapshot(session: AppSession | null): DashboardPayload
 }
 
 function getState() {
-  globalThis.evProgramLocalState ??= {
-    accounts: [],
-    families: {}
-  };
+  globalThis.evProgramLocalState ??= readStateFromDisk();
 
   return globalThis.evProgramLocalState;
 }
@@ -136,7 +173,7 @@ function getFamilyState(familyId: string) {
   const familyState = getState().families[familyId];
 
   if (!familyState) {
-    throw new Error("Aile kaydi bulunamadi.");
+    throw new Error("Aile kaydı bulunamadı.");
   }
 
   return familyState;
@@ -202,6 +239,7 @@ export async function registerLocalAccount(username: string, password: string) {
   };
 
   state.accounts.push(account);
+  persistState();
 
   return {
     accountId: account.id,
@@ -248,6 +286,7 @@ export async function changeLocalAccountPassword(
   }
 
   account.password_hash = hashSync(newPassword, 10);
+  persistState();
 }
 
 export async function bootstrapLocalApp(accountId: string, payload: SetupPayload) {
@@ -255,7 +294,7 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
   const account = state.accounts.find((item) => item.id === accountId);
 
   if (!account) {
-    throw new Error("Hesap bulunamadi.");
+    throw new Error("Hesap bulunamadı.");
   }
 
   if (account.family_id) {
@@ -319,6 +358,7 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
   };
 
   account.family_id = familyId;
+  persistState();
 
   return {
     familyId
@@ -351,6 +391,7 @@ export async function updateLocalParentPin(
   }
 
   family.parent_pin_hash = hashSync(newPin.trim(), 10);
+  persistState();
 }
 
 export async function saveLocalUser(familyId: string, payload: UserFormPayload) {
@@ -369,6 +410,7 @@ export async function saveLocalUser(familyId: string, payload: UserFormPayload) 
     target.color = payload.color;
     target.birthdate = payload.birthdate || null;
     target.visible_in_kiosk = true;
+    persistState();
     return;
   }
 
@@ -384,6 +426,7 @@ export async function saveLocalUser(familyId: string, payload: UserFormPayload) 
     points: 0,
     created_at: nowIso()
   });
+  persistState();
 }
 
 export async function deleteLocalUser(familyId: string, userId: string) {
@@ -409,6 +452,7 @@ export async function deleteLocalUser(familyId: string, userId: string) {
   familyState.redemptions = familyState.redemptions.filter((item) => item.user_id !== userId);
   familyState.pointEvents = familyState.pointEvents.filter((item) => item.user_id !== userId);
   familyState.users = familyState.users.filter((item) => item.id !== userId);
+  persistState();
 }
 
 export async function saveLocalTask(familyId: string, payload: TaskFormPayload) {
@@ -433,6 +477,7 @@ export async function saveLocalTask(familyId: string, payload: TaskFormPayload) 
 
   familyState.tasks = familyState.tasks.filter((item) => item.id !== task.id);
   familyState.tasks.push(task);
+  persistState();
 }
 
 export async function reorderLocalTasks(familyId: string, orderedTaskIds: string[]) {
@@ -463,6 +508,7 @@ export async function reorderLocalTasks(familyId: string, orderedTaskIds: string
 
   remainingTasks.splice(firstAffectedIndex, 0, ...orderedTasks);
   familyState.tasks = remainingTasks;
+  persistState();
 }
 
 export async function saveLocalReward(familyId: string, payload: RewardFormPayload) {
@@ -482,6 +528,7 @@ export async function saveLocalReward(familyId: string, payload: RewardFormPaylo
 
   familyState.rewards = familyState.rewards.filter((item) => item.id !== reward.id);
   familyState.rewards.push(reward);
+  persistState();
 }
 
 export async function saveLocalRewardSystemConfig(
@@ -543,6 +590,7 @@ export async function toggleLocalTaskCompletion(
       note: "Görev geri alındı",
       created_at: nowIso()
     });
+    persistState();
     return { completed: false, points_change: -existing.points_earned, total_points: user.points };
   }
 
@@ -568,6 +616,7 @@ export async function toggleLocalTaskCompletion(
     note: "Görev tamamlandı",
     created_at: nowIso()
   });
+  persistState();
 
   return { completed: true, points_change: task.points, total_points: user.points };
 }
@@ -611,6 +660,7 @@ export async function requestLocalReward(familyId: string, userId: string, rewar
       created_at: nowIso()
     });
   }
+  persistState();
 
   return redemption;
 }
@@ -624,7 +674,7 @@ export async function resolveLocalReward(
   const redemption = familyState.redemptions.find((item) => item.id === redemptionId);
 
   if (!redemption) {
-    throw new Error("Talep bulunamadi.");
+    throw new Error("Talep bulunamadı.");
   }
 
   if (redemption.status !== "beklemede") {
@@ -643,7 +693,7 @@ export async function resolveLocalReward(
     }
 
     if (user.points < reward.points_required) {
-      throw new Error("Onay icin yeterli puan yok.");
+      throw new Error("Onay için yeterli puan yok.");
     }
 
     user.points -= reward.points_required;
@@ -659,6 +709,7 @@ export async function resolveLocalReward(
       created_at: nowIso()
     });
   }
+  persistState();
 
   return redemption;
 }
@@ -688,6 +739,7 @@ export async function adjustLocalPoints(
     note,
     created_at: nowIso()
   });
+  persistState();
 
   return { total_points: user.points };
 }
@@ -702,6 +754,7 @@ export async function resetLocalProgress(familyId: string) {
   familyState.completions = [];
   familyState.redemptions = [];
   familyState.pointEvents = [];
+  persistState();
 }
 
 export async function updateLocalFamilySettings(
@@ -740,4 +793,5 @@ export async function updateLocalFamilySettings(
   if (typeof payload.day_reset_time === "string" && payload.day_reset_time.trim()) {
     family.day_reset_time = payload.day_reset_time.trim();
   }
+  persistState();
 }

@@ -2,7 +2,8 @@
 
 import { type ComponentType, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, MoonStar, Sparkles, Star, Sun, Sunrise, Sunset } from "lucide-react";
+import { CalendarDays, MoonStar, Sparkles, Star, Sun, Sunrise, Sunset, Wallet } from "lucide-react";
+import { formatAllowance } from "@/lib/allowance";
 import { isTaskCompleted } from "@/lib/schedule";
 import type {
   ActiveTimeBlock,
@@ -551,8 +552,8 @@ export function DaySummaryPanel({
 
       <div className="flex items-center justify-center">
         <div className="kid-score-pill">
-          <Star className="h-5 w-5 text-[var(--active-primary)]" />
-          Toplam {user.points} puan
+          <Wallet className="h-5 w-5 text-[var(--active-primary)]" />
+          Toplam {formatAllowance(user.points)}
         </div>
       </div>
 
@@ -623,8 +624,8 @@ export function DaySummaryPanel({
                             </div>
                           </div>
                           <div className="kid-points-badge shrink-0">
-                            <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
-                            {task.points}
+                            <Wallet className="h-4 w-4" />
+                            {formatAllowance(task.points)}
                           </div>
                         </div>
                       ))}

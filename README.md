@@ -7,7 +7,7 @@ Duvara monte tablet icin tasarlanmis, Turkce arayuze sahip aile gorev ve odul uy
 - Kiosk odakli ana ekran
 - Ebeveyn PIN girisi
 - Cocuklar icin profil secimi
-- Gorev, puan, odul ve haftalik planlama
+- Gorev, harclik ve haftalik planlama
 - Supabase tabanli veri modeli
 - Framer Motion animasyonlari ve sesli geri bildirim
 - Vercel uzerinde calisacak Next.js yapisi

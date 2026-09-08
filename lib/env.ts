@@ -7,13 +7,16 @@ function getEnv(name: string) {
 export const env = {
   supabaseUrl: getEnv("SUPABASE_URL"),
   supabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  useLocalDb: getEnv("USE_LOCAL_DB") === "true",
   sessionSecret: getEnv("SESSION_SECRET") || "gelistirme-icin-gecici-gizli-anahtar"
 };
 
 export function isSupabaseConfigured() {
   return (
+    !env.useLocalDb &&
     Boolean(env.supabaseUrl) &&
     Boolean(env.supabaseServiceRoleKey) &&
+    env.supabaseServiceRoleKey.length > 100 &&
     env.supabaseUrl !== "https://proje-kimliginiz.supabase.co" &&
     env.supabaseServiceRoleKey !== "service-role-key"
   );

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return jsonOk({ success: true });
   } catch (error) {
     return jsonError(
-      error instanceof Error ? error.message : "Hesap olusturulamadi.",
+      error instanceof Error ? error.message : "Hesap oluşturulamadı.",
       400
     );
   }

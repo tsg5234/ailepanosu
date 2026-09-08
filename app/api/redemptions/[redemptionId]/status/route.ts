@@ -21,6 +21,6 @@ export async function POST(request: Request, context: Context) {
     await resolveReward(session.familyId, redemptionId, body.status);
     return jsonOk(await getDashboardSnapshot());
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Talep guncellenemedi.", 500);
+    return jsonError(error instanceof Error ? error.message : "Talep güncellenemedi.", 500);
   }
 }

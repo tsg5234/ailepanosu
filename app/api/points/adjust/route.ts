@@ -8,17 +8,17 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { userId?: string; delta?: number; note?: string };
 
     if (!body.userId?.trim() || typeof body.delta !== "number") {
-      return jsonError("Kullanıcı ve puan farkı gerekli.");
+      return jsonError("Kullanıcı ve harçlık farkı gerekli.");
     }
 
     await adjustPoints(
       session.familyId,
       body.userId.trim(),
       body.delta,
-      body.note?.trim() || "Manuel duzenleme"
+      body.note?.trim() || "Manuel düzenleme"
     );
     return jsonOk(await getDashboardSnapshot());
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Puan duzenlenemedi.", 500);
+    return jsonError(error instanceof Error ? error.message : "Harçlık düzenlenemedi.", 500);
   }
 }

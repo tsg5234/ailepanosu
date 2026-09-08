@@ -16,7 +16,7 @@ export const WEEKDAY_KEYS = ["pzt", "sal", "car", "per", "cum", "cts", "paz"] as
 export const WEEKDAY_LABELS: Record<(typeof WEEKDAY_KEYS)[number], string> = {
   pzt: "Pzt",
   sal: "Sal",
-  car: "Car",
+  car: "Çar",
   per: "Per",
   cum: "Cum",
   cts: "Cts",

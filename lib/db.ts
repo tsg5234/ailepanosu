@@ -294,7 +294,7 @@ async function createPlaceholderFamily() {
     .single();
 
   if (error) {
-    fail("Aile kaydi olusturulamadi", error);
+    fail("Aile kaydı oluşturulamadı", error);
   }
 
   return data.id as string;
@@ -311,7 +311,7 @@ async function updateAccountUser(
   const { error } = await supabase.from("users").update(payload).eq("id", accountId);
 
   if (error) {
-    fail("Hesap bilgisi guncellenemedi", error);
+    fail("Hesap bilgisi güncellenemedi", error);
   }
 }
 
@@ -401,7 +401,7 @@ async function ensureFamilyRecordExists(
     .maybeSingle();
 
   if (error) {
-    fail("Aile kaydi dogrulanamadi", error);
+    fail("Aile kaydı doğrulanamadı", error);
   }
 
   if (!data) {
@@ -435,7 +435,7 @@ export async function registerAccount(payload: AccountAuthPayload) {
     .single();
 
   if (error) {
-    fail("Hesap olusturulamadi", error);
+    fail("Hesap oluşturulamadı", error);
   }
 
   return toAuthAccount(data as AccountUserRecord, username);
@@ -529,7 +529,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
   const accountUser = await getAccountUserById(account.accountId);
 
   if (!accountUser || !isAccountUserRecord(accountUser)) {
-    throw new Error("Hesap bulunamadi.");
+    throw new Error("Hesap bulunamadı.");
   }
 
   if (isAccountSetupComplete(accountUser)) {
@@ -581,7 +581,7 @@ export async function bootstrapApp(account: AuthAccount, payload: SetupPayload) 
     .eq("id", familyId);
 
   if (familyError) {
-    fail("Aile olusturulamadi", familyError);
+    fail("Aile oluşturulamadı", familyError);
   }
 
   const insertedUsers = await Promise.all(
@@ -864,7 +864,7 @@ export async function saveUser(familyId: string, payload: UserFormPayload) {
     }
 
     if (isAccountMarkerName(existing.name)) {
-      throw new Error("Bu profil duzenlenemez.");
+      throw new Error("Bu profil düzenlenemez.");
     }
 
     await updateProfileUser(familyId, payload.id, {
@@ -1121,7 +1121,7 @@ export async function saveRewardSystemConfig(
     .eq("family_id", familyId);
 
   if (error) {
-    fail("Puan sistemi ayarlari alinamadi", error);
+    fail("Puan sistemi ayarları alınamadı", error);
   }
 
   const currentConfig = getRewardSystemConfig((data ?? []) as RewardRecord[]);
@@ -1342,7 +1342,7 @@ export async function adjustPoints(familyId: string, userId: string, delta: numb
   });
 
   if (error) {
-    fail("Puan duzenlenemedi", error);
+    fail("Puan düzenlenemedi", error);
   }
 
   return data?.[0] ?? null;
@@ -1411,6 +1411,6 @@ export async function updateFamilySettings(
   const { error } = await supabase.from("families").update(payload).eq("id", familyId);
 
   if (error) {
-    fail("Aile ayarlari guncellenemedi", error);
+    fail("Aile ayarları güncellenemedi", error);
   }
 }

@@ -7,7 +7,7 @@ function readFileAsDataUrl(file: File) {
     const reader = new FileReader();
 
     reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Resim okunamadi."));
+    reader.onerror = () => reject(new Error("Resim okunamadı."));
     reader.readAsDataURL(file);
   });
 }
@@ -17,7 +17,7 @@ function loadImage(src: string) {
     const image = new Image();
 
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Resim hazirlanamadi."));
+    image.onerror = () => reject(new Error("Resim hazırlanamadı."));
     image.src = src;
   });
 }
@@ -40,7 +40,7 @@ export async function createAvatarDataUrl(file: File) {
   const context = canvas.getContext("2d");
 
   if (!context) {
-    throw new Error("Resim hazirlanamadi.");
+    throw new Error("Resim hazırlanamadı.");
   }
 
   context.imageSmoothingEnabled = true;

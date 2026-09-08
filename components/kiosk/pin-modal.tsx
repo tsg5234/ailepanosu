@@ -23,7 +23,7 @@ export function PinModal({ open, working, onClose, onSubmit }: PinModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-slate-950/38 backdrop-blur-sm"
+            className="pin-modal-backdrop fixed inset-0 z-[60]"
             onClick={onClose}
           />
           <motion.div
@@ -38,15 +38,15 @@ export function PinModal({ open, working, onClose, onSubmit }: PinModalProps) {
               exit={{ opacity: 0, scale: 0.92, y: 12 }}
               className="w-[min(92vw,480px)]"
             >
-              <div className="glass-panel-strong rounded-[2.5rem] p-6">
+              <div className="pin-modal-panel p-6">
                 <div className="text-center">
-                  <div className="text-sm font-bold uppercase tracking-[0.24em] text-sky-600">
-                    Ebeveyn girisi
+                  <div className="pin-modal-kicker text-sm font-bold uppercase tracking-[0.24em]">
+                    Ebeveyn girişi
                   </div>
                   <h2 className="mt-2 text-3xl font-black tracking-[-0.03em]">PIN girin</h2>
                 </div>
 
-                <div className="mt-5 rounded-[1.9rem] bg-[linear-gradient(145deg,#0f172a,#1d4ed8)] px-4 py-5 text-center text-4xl tracking-[0.5em] text-white shadow-[0_20px_34px_rgba(29,78,216,0.28)]">
+                <div className="pin-modal-display mt-5 px-4 py-5 text-center text-4xl tracking-[0.5em]">
                   {(pin || "*".repeat(4)).padEnd(4, "*").slice(0, 4)}
                 </div>
 
@@ -69,7 +69,9 @@ export function PinModal({ open, working, onClose, onSubmit }: PinModalProps) {
                         setPin((current) => `${current}${digit}`.slice(0, 6));
                       }}
                       disabled={working}
-                      className="touch-card rounded-[1.6rem] bg-white px-4 py-5 text-xl font-black text-slate-900 shadow-panel disabled:opacity-60"
+                      className={`pin-key px-4 py-5 text-xl font-black disabled:opacity-60 ${
+                        digit === "Tamam" ? "is-submit" : digit === "Sil" ? "is-clear" : ""
+                      }`}
                     >
                       {digit}
                     </button>
@@ -81,9 +83,9 @@ export function PinModal({ open, working, onClose, onSubmit }: PinModalProps) {
                     setPin("");
                     onClose();
                   }}
-                  className="mt-4 w-full rounded-[1.6rem] bg-slate-200 px-4 py-4 font-black text-slate-700"
+                  className="pin-cancel mt-4 w-full px-4 py-4 font-black"
                 >
-                  Vazgec
+                  Vazgeç
                 </button>
               </div>
             </motion.div>

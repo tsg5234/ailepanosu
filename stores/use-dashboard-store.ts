@@ -78,15 +78,68 @@ interface DashboardStore {
   changeParentPin: (payload: ParentPinChangePayload) => Promise<void>;
 }
 
+function normalizeHeaders(headers?: HeadersInit) {
+  const normalized: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+
+  if (!headers) {
+    return normalized;
+  }
+
+  if (typeof Headers !== "undefined" && headers instanceof Headers) {
+    headers.forEach((value, key) => {
+      normalized[key] = value;
+    });
+    return normalized;
+  }
+
+  if (Array.isArray(headers)) {
+    headers.forEach(([key, value]) => {
+      normalized[key] = value;
+    });
+    return normalized;
+  }
+
+  return {
+    ...normalized,
+    ...headers
+  };
+}
+
+function requestWithXhr(url: string, init?: RequestInit): Promise<{ ok: boolean; json: () => Promise<unknown> }> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open(init?.method ?? "GET", url, true);
+    request.withCredentials = init?.credentials === "include";
+
+    const headers = normalizeHeaders(init?.headers);
+    Object.entries(headers).forEach(([key, value]) => {
+      request.setRequestHeader(key, value);
+    });
+
+    request.onload = () => {
+      resolve({
+        ok: request.status >= 200 && request.status < 300,
+        json: async () => JSON.parse(request.responseText || "null")
+      });
+    };
+    request.onerror = () => reject(new Error("Sunucuya baglanilamadi."));
+    request.send(typeof init?.body === "string" ? init.body : null);
+  });
+}
+
 async function requestJson<T>(url: string, init?: RequestInit) {
-  const response = await fetch(url, {
+  const requestInit: RequestInit = {
     ...init,
     cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
-  });
+    headers: normalizeHeaders(init?.headers)
+  };
+
+  const response =
+    typeof fetch === "function"
+      ? await fetch(url, requestInit)
+      : await requestWithXhr(url, requestInit);
 
   const payload = (await response.json()) as T & { error?: string };
 
@@ -201,7 +254,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Giris yapilamadi."
+          message: error instanceof Error ? error.message : "Giriş yapılamadı."
         }
       });
       return false;
@@ -222,7 +275,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         loginOpen: false,
         adminOpen: false,
-        toast: { kind: "basari", message: "Hesap olusturuldu." }
+        toast: { kind: "basari", message: "Hesap oluşturuldu." }
       });
       return true;
     } catch (error) {
@@ -230,7 +283,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Hesap olusturulamadi."
+          message: error instanceof Error ? error.message : "Hesap oluşturulamadı."
         }
       });
       return false;
@@ -260,7 +313,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Cikis yapilamadi."
+          message: error instanceof Error ? error.message : "Çıkış yapılamadı."
         }
       });
     }
@@ -288,7 +341,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Giris yapilamadi."
+          message: error instanceof Error ? error.message : "Giriş yapılamadı."
         }
       });
       return false;
@@ -315,7 +368,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Cikis yapilamadi."
+          message: error instanceof Error ? error.message : "Çıkış yapılamadı."
         }
       });
     }
@@ -349,7 +402,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
           points,
           key: (state.celebration?.key ?? 0) + 1
         },
-        toast: { kind: "basari", message: "Aferin! Gorev islendi." }
+        toast: { kind: "basari", message: "Aferin! Görev işlendi." }
       }));
     } catch (error) {
       set((state) => ({
@@ -357,7 +410,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Gorev guncellenemedi."
+          message: error instanceof Error ? error.message : "Görev güncellenemedi."
         }
       }));
     }
@@ -393,7 +446,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Gorev geri alinamadi."
+          message: error instanceof Error ? error.message : "Görev geri alınamadı."
         }
       }));
     }
@@ -432,14 +485,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       withDashboardState(set, data);
       set({
         working: false,
-        toast: { kind: "basari", message: "Kullanici kaydedildi." }
+        toast: { kind: "basari", message: "Kullanıcı kaydedildi." }
       });
     } catch (error) {
       set({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Kullanici kaydedilemedi."
+          message: error instanceof Error ? error.message : "Kullanıcı kaydedilemedi."
         }
       });
     }
@@ -477,14 +530,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       withDashboardState(set, data);
       set({
         working: false,
-        toast: { kind: "basari", message: "Gorev kaydedildi." }
+        toast: { kind: "basari", message: "Görev kaydedildi." }
       });
     } catch (error) {
       set({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Gorev kaydedilemedi."
+          message: error instanceof Error ? error.message : "Görev kaydedilemedi."
         }
       });
     }
@@ -504,14 +557,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       withDashboardState(set, data);
       set({
         working: false,
-        toast: { kind: "basari", message: "Gorev sirasi guncellendi." }
+        toast: { kind: "basari", message: "Görev sırası güncellendi." }
       });
     } catch (error) {
       set({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Gorev sirasi guncellenemedi."
+          message: error instanceof Error ? error.message : "Görev sırası güncellenemedi."
         }
       });
     }
@@ -563,7 +616,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Talep guncellenemedi."
+          message: error instanceof Error ? error.message : "Talep güncellenemedi."
         }
       });
     }
@@ -579,14 +632,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       withDashboardState(set, data);
       set({
         working: false,
-        toast: { kind: "basari", message: "Puan duzenlendi." }
+        toast: { kind: "basari", message: "Harçlık düzenlendi." }
       });
     } catch (error) {
       set({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Puan duzenlenemedi."
+          message: error instanceof Error ? error.message : "Harçlık düzenlenemedi."
         }
       });
     }
@@ -625,14 +678,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       withDashboardState(set, data);
       set({
         working: false,
-        toast: { kind: "basari", message: "Aile ayarlari kaydedildi." }
+        toast: { kind: "basari", message: "Aile ayarları kaydedildi." }
       });
     } catch (error) {
       set({
         working: false,
         toast: {
           kind: "hata",
-          message: error instanceof Error ? error.message : "Aile ayarlari kaydedilemedi."
+          message: error instanceof Error ? error.message : "Aile ayarları kaydedilemedi."
         }
       });
     }

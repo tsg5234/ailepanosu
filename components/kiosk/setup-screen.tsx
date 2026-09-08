@@ -27,7 +27,7 @@ function createProfile(role: UserRole): SetupProfileDraft {
   return {
     name: "",
     role,
-    avatar: getDefaultAvatar(role),
+    avatar: getDefaultAvatar(),
     color: role === PARENT_ROLE ? "#2DD4BF" : "#60A5FA",
     birthdate: null,
     visible_in_kiosk: true
@@ -82,7 +82,7 @@ export function SetupScreen({
                 Kurulum
               </p>
               <h1 className="text-3xl font-black tracking-[-0.05em] text-slate-950 sm:text-[2.4rem]">
-                Aileni hazirla
+                Aileni hazırla
               </h1>
               <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
                 Giriş hesabın yönetim için hazır. Aile adını yaz, PIN&apos;ini belirle ve görünecek ebeveyn ile çocuk profillerini ekle.

@@ -1,23 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, CheckCircle2, Gift, Settings2, ShieldCheck, Star, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Settings2, ShieldCheck, Star, Users } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
+import { formatAllowance } from "@/lib/allowance";
 import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
-import {
-  DEFAULT_VALUE_LABEL,
-  DEFAULT_VALUE_PER_POINT,
-  REWARD_MODE_OPTIONS,
-  formatPointsAsValue,
-  getRewardSystemConfig,
-  getVisibleRewards,
-  rewardModeUsesGoals,
-  rewardModeUsesValue,
-  sanitizeValueLabel,
-  sanitizeValuePerPoint
-} from "@/lib/reward-system";
 import { isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type {
@@ -25,15 +14,13 @@ import type {
   DashboardPayload,
   FamilySettingsPayload,
   ParentPinChangePayload,
-  RewardFormPayload,
-  RewardSystemMode,
   TaskFormPayload,
   TaskRecord,
   TimeBlock,
   UserFormPayload
 } from "@/lib/types";
 
-type TabId = "kullanicilar" | "gorevler" | "oduller" | "puanlar" | "ayarlar";
+type TabId = "kullanicilar" | "gorevler" | "harcliklar" | "ayarlar";
 
 interface ParentPanelProps {
   open: boolean;
@@ -46,8 +33,6 @@ interface ParentPanelProps {
   onDeleteUser: (userId: string) => Promise<void>;
   onSaveTask: (payload: TaskFormPayload) => Promise<void>;
   onReorderTasks: (orderedTaskIds: string[]) => Promise<void>;
-  onSaveReward: (payload: RewardFormPayload) => Promise<void>;
-  onResolveRedemption: (redemptionId: string, status: "onaylandi" | "reddedildi") => Promise<void>;
   onAdjustPoints: (userId: string, delta: number, note: string) => Promise<void>;
   onUndoTaskCompletion: (
     taskId: string,
@@ -65,18 +50,34 @@ interface ParentPanelProps {
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
-  { id: "oduller", label: "Ödüller", icon: Gift },
-  { id: "puanlar", label: "Puanlar", icon: Star },
+  { id: "harcliklar", label: "Harçlık", icon: Star },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
 ];
 
-const userDefaults: UserFormPayload = {
-  name: "",
-  role: "çocuk",
-  avatar: getDefaultAvatar("çocuk"),
-  color: "#FB923C",
-  birthdate: ""
-};
+const PROFILE_COLORS = [
+  "#60A5FA",
+  "#34D399",
+  "#F97316",
+  "#F472B6",
+  "#A78BFA",
+  "#22C55E",
+  "#F59E0B",
+  "#06B6D4"
+];
+
+function getRandomProfileColor() {
+  return PROFILE_COLORS[Math.floor(Math.random() * PROFILE_COLORS.length)] ?? PROFILE_COLORS[0];
+}
+
+function createUserDefaults(): UserFormPayload {
+  return {
+    name: "",
+    role: "çocuk",
+    avatar: getDefaultAvatar(),
+    color: getRandomProfileColor(),
+    birthdate: ""
+  };
+}
 
 const taskDefaults: TaskFormPayload = {
   title: "",
@@ -87,12 +88,6 @@ const taskDefaults: TaskFormPayload = {
   days: [],
   specialDates: [],
   timeBlock: "sabah"
-};
-
-const rewardDefaults: RewardFormPayload = {
-  title: "",
-  pointsRequired: 120,
-  approvalRequired: true
 };
 
 function createTaskDraft(ownerId?: string): TaskFormPayload {
@@ -114,10 +109,15 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={`glass-panel rounded-[2rem] p-5 ${className ?? ""}`}>
-      <h3 className="text-xl font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-[color:var(--text-muted)]">{description}</p>
-      <div className="mt-5">{children}</div>
+    <section className={`parent-management-panel ${className ?? ""}`}>
+      <div className="parent-management-heading">
+        <div>
+          <span>Yönetim alanı</span>
+          <strong>{title}</strong>
+        </div>
+        <p>{description}</p>
+      </div>
+      <div className="parent-management-body">{children}</div>
     </section>
   );
 }
@@ -195,8 +195,6 @@ export function ParentPanel(props: ParentPanelProps) {
     onDeleteUser,
     onSaveTask,
     onReorderTasks,
-    onSaveReward,
-    onResolveRedemption,
     onAdjustPoints,
     onUndoTaskCompletion,
     onResetProgress,
@@ -207,22 +205,17 @@ export function ParentPanel(props: ParentPanelProps) {
   } = props;
 
   const [tab, setTab] = useState<TabId>("kullanicilar");
-  const [userDraft, setUserDraft] = useState<UserFormPayload>(userDefaults);
+  const [userDraft, setUserDraft] = useState<UserFormPayload>(() => createUserDefaults());
   const [taskDraft, setTaskDraft] = useState<TaskFormPayload>(taskDefaults);
-  const [rewardDraft, setRewardDraft] = useState<RewardFormPayload>(rewardDefaults);
   const [specialDate, setSpecialDate] = useState("");
   const [familyName, setFamilyName] = useState("");
-  const [theme, setTheme] = useState<"acik" | "koyu">("acik");
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [childSleepTime, setChildSleepTime] = useState("22:00");
   const [parentSleepTime, setParentSleepTime] = useState("00:00");
   const [dayResetTime, setDayResetTime] = useState("00:00");
-  const [rewardMode, setRewardMode] = useState<RewardSystemMode>("odul");
-  const [valueLabel, setValueLabel] = useState(DEFAULT_VALUE_LABEL);
-  const [valuePerPoint, setValuePerPoint] = useState(String(DEFAULT_VALUE_PER_POINT));
   const [pointsUserId, setPointsUserId] = useState("");
   const [pointsDeltaInput, setPointsDeltaInput] = useState("10");
-  const [pointsNote, setPointsNote] = useState("Bonus puan");
+  const [pointsNote, setPointsNote] = useState("Harçlık düzeltmesi");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [showTaskPotentialDetails, setShowTaskPotentialDetails] = useState(false);
@@ -238,16 +231,11 @@ export function ParentPanel(props: ParentPanelProps) {
     if (!data?.family) {
       return;
     }
-    const rewardSystem = getRewardSystemConfig(data.rewards ?? []);
     setFamilyName(data.family.name);
-    setTheme(data.family.theme);
     setAudioEnabled(data.family.audio_enabled);
     setChildSleepTime(data.family.child_sleep_time || "22:00");
     setParentSleepTime(data.family.parent_sleep_time || "00:00");
     setDayResetTime(data.family.day_reset_time || "00:00");
-    setRewardMode(rewardSystem.mode);
-    setValueLabel(rewardSystem.valueLabel);
-    setValuePerPoint(String(rewardSystem.valuePerPoint));
     setPointsUserId((current) => current || data.users[0]?.id || "");
   }, [data]);
 
@@ -290,29 +278,6 @@ export function ParentPanel(props: ParentPanelProps) {
   const userLookup = useMemo(
     () => Object.fromEntries((data?.users ?? []).map((user) => [user.id, user])),
     [data?.users]
-  );
-  const savedRewardSystemConfig = useMemo(
-    () => getRewardSystemConfig(data?.rewards ?? []),
-    [data?.rewards]
-  );
-  const visibleRewards = useMemo(() => getVisibleRewards(data?.rewards ?? []), [data?.rewards]);
-  const rewardModeOption = useMemo(
-    () => REWARD_MODE_OPTIONS.find((item) => item.value === rewardMode),
-    [rewardMode]
-  );
-  const usesGoalRewards = rewardModeUsesGoals(rewardMode);
-  const usesValueRewards = rewardModeUsesValue(rewardMode);
-  const normalizedValueLabel = sanitizeValueLabel(valueLabel);
-  const normalizedValuePerPoint = sanitizeValuePerPoint(
-    Number(String(valuePerPoint).replace(",", "."))
-  );
-  const valuePreview = formatPointsAsValue(
-    200,
-    { valueLabel: normalizedValueLabel, valuePerPoint: normalizedValuePerPoint }
-  );
-  const rewardLookup = useMemo(
-    () => Object.fromEntries(visibleRewards.map((reward) => [reward.id, reward])),
-    [visibleRewards]
   );
   const taskUsers = data?.users ?? [];
   const selectedTaskUser = taskUserView !== "tum" ? userLookup[taskUserView] : undefined;
@@ -516,32 +481,10 @@ export function ParentPanel(props: ParentPanelProps) {
   const handleSaveSettings = async () => {
     await onUpdateSettings({
       name: familyName,
-      theme,
       audioEnabled,
       childSleepTime,
       parentSleepTime,
-      dayResetTime,
-      rewardMode: savedRewardSystemConfig.mode,
-      valueLabel: savedRewardSystemConfig.valueLabel,
-      valuePerPoint: savedRewardSystemConfig.valuePerPoint
-    });
-  };
-
-  const handleSaveRewardSystem = async () => {
-    if (!data?.family) {
-      return;
-    }
-
-    await onUpdateSettings({
-      name: data.family.name,
-      theme: data.family.theme,
-      audioEnabled: data.family.audio_enabled,
-      childSleepTime: data.family.child_sleep_time || "22:00",
-      parentSleepTime: data.family.parent_sleep_time || "00:00",
-      dayResetTime: data.family.day_reset_time || "00:00",
-      rewardMode,
-      valueLabel: normalizedValueLabel,
-      valuePerPoint: normalizedValuePerPoint
+      dayResetTime
     });
   };
 
@@ -597,79 +540,8 @@ export function ParentPanel(props: ParentPanelProps) {
     }
 
     await onDeleteUser(userDraft.id);
-    setUserDraft(userDefaults);
+    setUserDraft(createUserDefaults());
   };
-
-  const rewardSystemPanel = (
-    <Card title="Puan sistemi" description="Puanin ailede nasil kullanilacagini buradan sec.">
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          {REWARD_MODE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setRewardMode(option.value)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                rewardMode === option.value ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
-          {rewardModeOption?.description}
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block space-y-2">
-            <Label>Karsilik birimi</Label>
-            <input
-              value={valueLabel}
-              onChange={(event) => setValueLabel(event.target.value)}
-              disabled={!usesValueRewards}
-              placeholder="Örnek: TL, dakika, jeton"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
-            />
-          </label>
-          <label className="block space-y-2">
-            <Label>1 puan kac birim eder</Label>
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={valuePerPoint}
-              onChange={(event) => setValuePerPoint(event.target.value)}
-              disabled={!usesValueRewards}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 disabled:cursor-not-allowed disabled:bg-slate-100"
-            />
-          </label>
-        </div>
-        <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[color:var(--text-muted)]">
-          {usesValueRewards ? (
-            <>
-              Örnek görünüm: <span className="font-semibold text-slate-950">200 puan = {valuePreview}</span>
-            </>
-          ) : usesGoalRewards ? (
-            <>Hedef ödüller bu sekmede tanımlanır ve çocuk ekranında bir sonraki hedef olarak görünür.</>
-          ) : (
-            <>Bu modda çocuklar yalnızca puanlarını görür. Puanın neye dönüştüğünü ayrıca göstermeyiz.</>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleSaveRewardSystem}
-            disabled={working}
-            className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
-          >
-            Puan sistemini kaydet
-          </button>
-          <div className="text-sm text-[color:var(--text-muted)]">
-            Bu bölümdeki değişiklikler aile ayarlarına kaydedilir.
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
 
   const lockedView = (
     <div className="flex min-h-0 flex-1 items-center justify-center p-8">
@@ -690,19 +562,42 @@ export function ParentPanel(props: ParentPanelProps) {
   );
 
   const usersTab = (
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_380px]">
-      <Card title="Profil düzenleyici" description="Ebeveyn ve çocuk profillerini buradan yönetin.">
-        <div className="space-y-4">
-          <label className="block space-y-2">
-            <Label>İsim</Label>
-            <input
-              value={userDraft.name}
-              onChange={(event) => setUserDraft((current) => ({ ...current, name: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-            />
-          </label>
-          <div className="grid gap-4 md:grid-cols-2 md:items-end">
-            <label className="block space-y-2">
+    <div className="parent-users-workspace">
+      <section className="parent-user-editor-panel">
+        <div className="parent-panel-heading">
+          <div>
+            <span>Profil merkezi</span>
+            <strong>{userDraft.id ? "Profili düzenle" : "Yeni profil"}</strong>
+          </div>
+          <button type="button" onClick={() => setUserDraft(createUserDefaults())}>
+            Yeni profil
+          </button>
+        </div>
+
+        <div className="parent-user-editor-grid">
+          <div
+            className="parent-user-preview"
+            style={{ "--profile-color": userDraft.color } as CSSProperties}
+          >
+            <div className="parent-user-preview-avatar">
+              <AvatarDisplay avatar={userDraft.avatar} name={userDraft.name || "Profil"} />
+            </div>
+            <div>
+              <span>{userDraft.id ? "Seçili profil" : "Yeni profil"}</span>
+              <strong>{userDraft.name || "Profil adı"}</strong>
+              <em>{userDraft.role === "ebeveyn" ? "Ebeveyn" : "Çocuk"}</em>
+            </div>
+          </div>
+
+          <div className="parent-user-fields">
+            <label>
+              <Label>İsim</Label>
+              <input
+                value={userDraft.name}
+                onChange={(event) => setUserDraft((current) => ({ ...current, name: event.target.value }))}
+              />
+            </label>
+            <label>
               <Label>Rol</Label>
               <select
                 value={userDraft.role}
@@ -718,73 +613,56 @@ export function ParentPanel(props: ParentPanelProps) {
                       event.target.value === "ebeveyn" ? null : current.birthdate
                   }))
                 }
-                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               >
                 <option value="çocuk">Çocuk</option>
                 <option value="ebeveyn">Ebeveyn</option>
               </select>
             </label>
-            <label className="block space-y-2">
+            <label>
               <Label>Doğum tarihi</Label>
               <input
                 type="date"
                 value={userDraft.birthdate ?? ""}
                 onChange={(event) => setUserDraft((current) => ({ ...current, birthdate: event.target.value }))}
-                className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               />
             </label>
           </div>
-          <AvatarPicker
-            compact
-            role={userDraft.role}
-            value={userDraft.avatar}
-            onChange={(avatar) => setUserDraft((current) => ({ ...current, avatar }))}
-          />
-          <label className="block space-y-2">
-            <Label>Renk</Label>
-            <div className="flex h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <input
-                type="color"
-                value={userDraft.color}
-                onChange={(event) => setUserDraft((current) => ({ ...current, color: event.target.value }))}
-                className="h-10 w-14 rounded-xl"
-              />
-              <span className="font-medium">{userDraft.color}</span>
-            </div>
-          </label>
-          <div className="flex gap-3">
-            <button
-              onClick={() => onSaveUser(userDraft)}
-              disabled={working}
-              className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
-            >
-              {userDraft.id ? "Güncelle" : "Kullanıcı ekle"}
-            </button>
-            {userDraft.id ? (
-              <button
-                onClick={handleDeleteSelectedUser}
-                disabled={working}
-                className="rounded-[1.4rem] bg-rose-100 px-5 py-3 font-semibold text-rose-700 disabled:opacity-60"
-              >
-                Profili sil
-              </button>
-            ) : null}
-            <button
-              onClick={() => setUserDraft(userDefaults)}
-              className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
-            >
-              Temizle
-            </button>
+        </div>
+
+        <div className="parent-user-customize">
+          <div className="parent-avatar-compact">
+            <AvatarPicker
+              compact
+              role={userDraft.role}
+              value={userDraft.avatar}
+              onChange={(avatar) => setUserDraft((current) => ({ ...current, avatar }))}
+            />
           </div>
         </div>
-      </Card>
 
-      <Card
-        title="Mevcut profiller"
-        description="Düzenlemek için bir profile dokunun."
-        className="xl:sticky xl:top-0"
-      >
-        <div className="soft-scrollbar grid max-h-[calc(100dvh-17rem)] gap-3 overflow-y-auto pr-1 md:grid-cols-2 xl:grid-cols-1">
+        <div className="parent-editor-actions">
+          <button onClick={() => onSaveUser(userDraft)} disabled={working} className="is-primary">
+            {userDraft.id ? "Güncelle" : "Kullanıcı ekle"}
+          </button>
+          {userDraft.id ? (
+            <button onClick={handleDeleteSelectedUser} disabled={working} className="is-danger">
+              Profili sil
+            </button>
+          ) : null}
+          <button onClick={() => setUserDraft(createUserDefaults())} className="is-secondary">
+            Temizle
+          </button>
+        </div>
+      </section>
+
+      <section className="parent-profile-directory-panel">
+        <div className="parent-panel-heading">
+          <div>
+            <span>Aile profilleri</span>
+            <strong>Mevcut profiller</strong>
+          </div>
+        </div>
+        <div className="parent-profile-list soft-scrollbar">
           {data?.users.map((user) => (
             <button
               key={user.id}
@@ -798,37 +676,37 @@ export function ParentPanel(props: ParentPanelProps) {
                   birthdate: user.birthdate ?? ""
                 })
               }
-              className="rounded-[1.6rem] border border-slate-200 bg-white/80 p-4 text-left"
+              className={`parent-profile-button ${userDraft.id === user.id ? "is-active" : ""}`}
             >
-              <div className="flex items-center gap-4">
+              <div className="parent-profile-row">
                 <div
-                  className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.3rem] text-3xl"
+                  className="parent-profile-avatar"
                   style={{ backgroundColor: `${user.color}22`, color: user.color }}
                 >
                   <AvatarDisplay avatar={user.avatar} name={user.name} />
                 </div>
-                <div>
-                  <div className="text-lg font-semibold">{user.name}</div>
-                  <div className="text-sm text-[color:var(--text-muted)]">
-                    {user.role === "ebeveyn" ? "Ebeveyn" : "Çocuk"} • {user.points} puan
+                <div className="parent-profile-copy">
+                  <div className="parent-profile-name">{user.name}</div>
+                  <div className="parent-profile-meta">
+                    {user.role === "ebeveyn" ? "Ebeveyn" : "Çocuk"} / {formatAllowance(user.points)}
                   </div>
                 </div>
               </div>
             </button>
           ))}
         </div>
-      </Card>
+      </section>
     </div>
   );
 
   const tasksTab = (
     <div className="space-y-5">
-      <div className="glass-panel rounded-[1.8rem] p-4">
+      <div className="parent-management-toolbar">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="text-sm font-semibold text-slate-950">Kişiye göre görev yönetimi</div>
             <div className="text-sm text-[color:var(--text-muted)]">
-              Her profilin görevini ve puanını ayrı ayrı planla.
+              Her profilin görevini ve harçlığını ayrı ayrı planla.
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -876,7 +754,7 @@ export function ParentPanel(props: ParentPanelProps) {
               />
             </label>
             <label className="block space-y-2">
-              <Label>Puan</Label>
+              <Label>Harçlık</Label>
               <input
                 type="number"
                 min={5}
@@ -1081,15 +959,15 @@ export function ParentPanel(props: ParentPanelProps) {
                 {selectedTaskUser ? (
                   <>
                     <span className="font-semibold text-slate-950">
-                      {selectedTaskUser.name} için {visibleTaskPoints} puan görünür
+                      {selectedTaskUser.name} için {formatAllowance(visibleTaskPoints)} görünür
                     </span>
-                    <span>{selectedTaskUserPotential?.points ?? 0} puan bugün kazanabilir</span>
+                    <span>{formatAllowance(selectedTaskUserPotential?.points ?? 0)} bugün kazanabilir</span>
                     <span>{selectedTaskUserPotential?.taskCount ?? 0} görev bugün planlı</span>
                   </>
                 ) : (
                   <>
-                    <span className="font-semibold text-slate-950">{visibleTaskPoints} puan görünür</span>
-                    <span>{todaysFamilyPotential} puan bugün dağıtılabilir</span>
+                    <span className="font-semibold text-slate-950">{formatAllowance(visibleTaskPoints)} görünür</span>
+                    <span>{formatAllowance(todaysFamilyPotential)} bugün dağıtılabilir</span>
                     <span>{todaysPotentialByUser.length || 0} profil bugün görev alıyor</span>
                   </>
                 )}
@@ -1127,7 +1005,7 @@ export function ParentPanel(props: ParentPanelProps) {
                         <div className="text-xs text-[color:var(--text-muted)]">{item.taskCount} görev</div>
                       </div>
                       <div className="ml-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-                        {item.points} puan
+                        {formatAllowance(item.points)}
                       </div>
                     </div>
                   ))}
@@ -1190,7 +1068,7 @@ export function ParentPanel(props: ParentPanelProps) {
                                     : "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
                                 }`}
                               >
-                                {task.points} puan
+                                {formatAllowance(task.points)}
                               </span>
                               <span
                                 className={`text-sm ${
@@ -1265,140 +1143,9 @@ export function ParentPanel(props: ParentPanelProps) {
     </div>
   );
 
-  const rewardsTab = (
-    <div className="space-y-5">
-      {rewardSystemPanel}
-
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card title="Hedef ödül düzenleyici" description="Puanla açılacak ödül hedeflerini buradan yönetin.">
-          <div className="space-y-4">
-            <label className="block space-y-2">
-              <Label>Baslik</Label>
-              <input
-                value={rewardDraft.title}
-                onChange={(event) => setRewardDraft((current) => ({ ...current, title: event.target.value }))}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-              />
-            </label>
-            <label className="block space-y-2">
-              <Label>Gerekli puan</Label>
-              <input
-                type="number"
-                min={10}
-                value={rewardDraft.pointsRequired}
-                onChange={(event) =>
-                  setRewardDraft((current) => ({
-                    ...current,
-                    pointsRequired: Number(event.target.value || 0)
-                  }))
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-              />
-            </label>
-            <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
-              <div>
-                <div className="font-semibold">Ebeveyn onayi gerekli</div>
-                <div className="text-sm text-[color:var(--text-muted)]">Kapaliysa otomatik verilir.</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={rewardDraft.approvalRequired}
-                onChange={(event) =>
-                  setRewardDraft((current) => ({ ...current, approvalRequired: event.target.checked }))
-                }
-                className="h-5 w-5"
-              />
-            </label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => onSaveReward(rewardDraft)}
-                disabled={working}
-                className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
-              >
-                {rewardDraft.id ? "Güncelle" : "Ödül ekle"}
-              </button>
-              <button
-                onClick={() => setRewardDraft(rewardDefaults)}
-                className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
-              >
-                Temizle
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        <div className="space-y-5">
-          <Card title="Bekleyen talepler" description="Çocuk taleplerini onaylayın veya reddedin.">
-            <div className="space-y-3">
-              {data?.redemptions
-                .filter((item) => item.status === "beklemede")
-                .map((item) => (
-                  <div key={item.id} className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-                    <div className="text-lg font-semibold">
-                      {userLookup[item.user_id]?.name} • {rewardLookup[item.reward_id]?.title}
-                    </div>
-                    <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                      {rewardLookup[item.reward_id]?.points_required} puan
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => onResolveRedemption(item.id, "onaylandi")}
-                        className="rounded-full bg-emerald-100 px-4 py-2 font-semibold text-emerald-700"
-                      >
-                        Onayla
-                      </button>
-                      <button
-                        onClick={() => onResolveRedemption(item.id, "reddedildi")}
-                        className="rounded-full bg-rose-100 px-4 py-2 font-semibold text-rose-700"
-                      >
-                        Reddet
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              {data?.redemptions.filter((item) => item.status === "beklemede").length === 0 ? (
-                <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                  Bekleyen talep yok.
-                </div>
-              ) : null}
-            </div>
-          </Card>
-
-          <Card title="Hedef ödül listesi" description="Düzenlemek için bir hedefe dokunun.">
-            <div className="grid gap-3 md:grid-cols-2">
-              {visibleRewards.map((reward) => (
-                <button
-                  key={reward.id}
-                  onClick={() =>
-                    setRewardDraft({
-                      id: reward.id,
-                      title: reward.title,
-                      pointsRequired: reward.points_required,
-                      approvalRequired: reward.approval_required
-                    })
-                  }
-                  className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-left"
-                >
-                  <div className="text-lg font-semibold">{reward.title}</div>
-                  <div className="mt-1 text-sm text-[color:var(--text-muted)]">
-                    {reward.points_required} puan • {reward.approval_required ? "Onaylı" : "Otomatik"}
-                  </div>
-                </button>
-              ))}
-              {visibleRewards.length === 0 ? (
-                <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                  Henüz hedef ödül eklenmedi. Sinema, dışarıda yemek veya dondurma gibi hedefleri buradan tanımlayabilirsin.
-                </div>
-              ) : null}
-            </div>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
   const pointsTab = (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Puan düzenleme" description="Bonus ve düzeltme puanlarını manuel işleyin.">
+      <Card title="Harçlık düzenleme" description="Bonus ve düzeltme harçlıklarını manuel işleyin.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Kullanıcı</Label>
@@ -1415,7 +1162,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </select>
           </label>
           <label className="block space-y-2">
-            <Label>Puan farkı</Label>
+            <Label>Harçlık farkı</Label>
             <input
               type="text"
               inputMode="numeric"
@@ -1431,7 +1178,7 @@ export function ParentPanel(props: ParentPanelProps) {
             />
           </label>
           <div className="space-y-2">
-            <Label>Hızlı puan seç</Label>
+            <Label>Hızlı harçlık seç</Label>
             <div className="flex flex-wrap gap-2">
               {POINT_DELTA_PRESETS.map((delta) => {
                 const active = parsedPointsDelta === delta;
@@ -1452,13 +1199,13 @@ export function ParentPanel(props: ParentPanelProps) {
                           : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                     }`}
                   >
-                    {delta > 0 ? `+${delta}` : delta} puan
+                    {delta > 0 ? `+${formatAllowance(delta)}` : formatAllowance(delta)}
                   </button>
                 );
               })}
             </div>
             <div className="text-xs text-[color:var(--text-muted)]">
-              Eksi değer puan düşürür, artı değer bonus puan ekler.
+              Eksi değer harçlık düşürür, artı değer bonus harçlık ekler.
             </div>
           </div>
           <label className="block space-y-2">
@@ -1480,7 +1227,7 @@ export function ParentPanel(props: ParentPanelProps) {
             disabled={working || !canSubmitPoints}
             className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
           >
-            Puani işle
+            Harcligi isle
           </button>
         </div>
       </Card>
@@ -1499,7 +1246,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 <div>
                   <div className="font-semibold">{task.title}</div>
                   <div className="text-sm text-[color:var(--text-muted)]">
-                    {TIME_BLOCK_LABELS[task.time_block]} • {task.points} puan
+                    {TIME_BLOCK_LABELS[task.time_block]} • {formatAllowance(task.points)}
                   </div>
                 </div>
                 <button
@@ -1527,14 +1274,14 @@ export function ParentPanel(props: ParentPanelProps) {
               <div key={event.id} className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
                 <div>
                   <div className="font-semibold">{userLookup[event.user_id]?.name}</div>
-                  <div className="text-sm text-[color:var(--text-muted)]">{event.note || "Puan hareketi"}</div>
+                  <div className="text-sm text-[color:var(--text-muted)]">{event.note || "Harçlık hareketi"}</div>
                 </div>
                 <div
                   className={`rounded-full px-3 py-1 text-sm font-semibold ${
                     event.delta >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
                   }`}
                 >
-                  {event.delta > 0 ? `+${event.delta}` : event.delta} puan
+                  {event.delta > 0 ? `+${formatAllowance(event.delta)}` : formatAllowance(event.delta)}
                 </div>
               </div>
             ))}
@@ -1546,7 +1293,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
   const settingsTab = (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Aile ayarları" description="Tema, ses ve kiosk davranışını yönetin.">
+      <Card title="Aile ayarları" description="Ses, uyku saati ve kiosk davranışını yönetin.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Aile adı</Label>
@@ -1556,25 +1303,6 @@ export function ParentPanel(props: ParentPanelProps) {
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
-          <div className="space-y-2">
-            <Label>Tema</Label>
-            <div className="flex gap-3">
-              {[
-                { value: "acik", label: "Açık" },
-                { value: "koyu", label: "Koyu" }
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() => setTheme(item.value as "acik" | "koyu")}
-                  className={`rounded-full px-4 py-2 font-semibold ${
-                    theme === item.value ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
           <label className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4">
             <div>
               <div className="font-semibold">Sesli geri bildirim açık</div>
@@ -1632,7 +1360,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </button>
             <button
               onClick={async () => {
-                if (!window.confirm("Tüm puanlar, tamamlanan görevler ve test geçmişi sıfırlansın mı?")) {
+                if (!window.confirm("Tüm harçlıklar, tamamlanan görevler ve test geçmişi sıfırlansın mı?")) {
                   return;
                 }
                 await onResetProgress();
@@ -1758,7 +1486,7 @@ export function ParentPanel(props: ParentPanelProps) {
           <div className="space-y-3 text-[color:var(--text-muted)]">
             <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
             <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli PIN ile korunur.</div>
-            <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu puanları ve tamamlananları temizler, kullanıcıları silmez.</div>
+            <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu harçlıkları ve tamamlananları temizler, kullanıcıları silmez.</div>
             <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
           </div>
         </Card>
@@ -1770,30 +1498,29 @@ export function ParentPanel(props: ParentPanelProps) {
     ? usersTab
     : tab === "gorevler"
       ? tasksTab
-      : tab === "oduller"
-        ? rewardsTab
-        : tab === "puanlar"
-          ? pointsTab
-          : settingsTab;
+      : tab === "harcliklar"
+        ? pointsTab
+        : settingsTab;
 
   const body = !data?.session.parentAuthenticated
     ? lockedView
     : (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 xl:grid xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
-        <aside className="glass-panel rounded-[2rem] p-3 lg:p-4 xl:sticky xl:top-0 xl:min-h-0">
-          <div className="mb-4 px-2">
+      <div className="parent-command-layout">
+        <aside className="parent-command-sidebar">
+          <div className="parent-command-family">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yönetim paneli</div>
-            <div className="mt-2 text-2xl font-semibold">{data.family?.name}</div>
+            <strong>{data.family?.name}</strong>
+            <span>Aile ayarları ve görev sistemi</span>
           </div>
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:mx-0 xl:block xl:space-y-2 xl:overflow-visible xl:px-0 xl:pb-0">
+          <div className="parent-command-tabs">
             {tabs.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setTab(item.id)}
-                className={`flex shrink-0 items-center gap-3 rounded-[1.3rem] px-4 py-3 text-left font-semibold xl:w-full ${
+                className={`parent-command-tab ${
                   tab === item.id
-                    ? "bg-slate-950 text-white"
-                    : "bg-white/70 text-slate-700"
+                    ? "is-active"
+                    : ""
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -1803,36 +1530,36 @@ export function ParentPanel(props: ParentPanelProps) {
           </div>
         </aside>
 
-        <div className="min-h-0 flex-1 pr-1 sm:pr-2">
+        <div className="parent-command-content">
           {activeTabContent}
         </div>
       </div>
     );
 
   const panelShell = (
-    <div className="glass-panel-strong flex h-full min-h-0 flex-col overflow-hidden rounded-none p-3 sm:rounded-[2.4rem] sm:p-4 lg:p-5">
-      <div className="mb-3 flex items-center justify-between gap-4 border-b border-white/60 px-1 pb-3 sm:mb-4 sm:pb-4">
-        <div className="min-w-0">
+    <div className="parent-command-shell">
+      <div className="parent-command-header">
+        <div className="parent-command-title">
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Yönetim paneli</div>
           <div className="text-xl font-semibold sm:text-2xl">Aile kontrol merkezi</div>
         </div>
         {!standalone ? (
           <button
             onClick={onClose}
-            className="rounded-full bg-slate-200 px-4 py-2 font-semibold text-slate-800"
+            className="parent-command-close"
           >
             Kapat
           </button>
         ) : null}
       </div>
-      <div className="soft-scrollbar min-h-0 flex-1 overflow-y-auto pr-1 sm:pr-2">{body}</div>
+      <div className="parent-command-scroll soft-scrollbar">{body}</div>
     </div>
   );
 
   if (standalone) {
     return (
-      <div className="app-surface min-h-screen overflow-hidden p-0 sm:p-3 lg:p-4">
-        <div className="mx-auto h-[100dvh] w-full max-w-[1600px] sm:h-[calc(100dvh-1.5rem)] lg:h-[calc(100dvh-2rem)]">
+      <div className="parent-command-page">
+        <div className="parent-command-page-inner">
           {panelShell}
         </div>
       </div>

@@ -7,8 +7,8 @@ export function getAvatarOptions(role: UserRole) {
   return role === "ebeveyn" ? PARENT_AVATARS : CHILD_AVATARS;
 }
 
-export function getDefaultAvatar(role: UserRole) {
-  return getAvatarOptions(role)[0];
+export function getDefaultAvatar() {
+  return "";
 }
 
 export function isImageAvatar(avatar: string) {
@@ -23,16 +23,16 @@ export function isImageAvatar(avatar: string) {
   );
 }
 
-export function normalizeAvatarForRole(role: UserRole, avatar: string) {
+export function normalizeAvatarForRole(_role: UserRole, avatar: string) {
   const value = avatar.trim();
 
   if (!value) {
-    return getDefaultAvatar(role);
+    return "";
   }
 
   if (isImageAvatar(value)) {
     return value;
   }
 
-  return getAvatarOptions(role).includes(value) ? value : getDefaultAvatar(role);
+  return "";
 }

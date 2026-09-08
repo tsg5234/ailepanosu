@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RewardFormPayload;
 
     if (!body.title?.trim() || !body.pointsRequired) {
-      return jsonError("Başlık ve puan gerekli.");
+      return jsonError("Başlık ve harçlık gerekli.");
     }
 
     await saveReward(session.familyId, {
