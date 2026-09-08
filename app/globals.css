@@ -3564,11 +3564,13 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  flex: 0 0 auto;
   min-height: 2.55rem;
   border: 1px solid var(--command-line);
   background: rgba(255, 254, 249, 0.72);
   padding: 0 0.8rem;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .command-clock {
@@ -3584,7 +3586,7 @@ button {
 }
 
 .command-date-metric {
-  max-width: 16rem;
+  max-width: none;
 }
 
 .command-header-actions {
