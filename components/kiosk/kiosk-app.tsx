@@ -409,10 +409,12 @@ function ProfilesDirectory({
                   >
                     {pending ? <RefreshCw className="h-4 w-4 animate-spin" /> : completed ? <Check className="h-5 w-5" /> : null}
                   </button>
-                  <span>{task.icon || DEFAULT_TASK_ICON}</span>
+                  <span className="command-profile-task-icon">{task.icon || DEFAULT_TASK_ICON}</span>
                   <strong>{task.title}</strong>
-                  <em>{getTurkishBlockLabel(task.time_block)}</em>
-                  <b>{formatAllowance(task.points)}</b>
+                  <span className="command-profile-task-meta">
+                    <em>{getTurkishBlockLabel(task.time_block)}</em>
+                    <b>{formatAllowance(task.points)}</b>
+                  </span>
                 </article>
               );
             })
