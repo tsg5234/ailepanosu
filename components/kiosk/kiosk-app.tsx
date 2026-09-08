@@ -27,11 +27,9 @@ import { formatAllowance } from "@/lib/allowance";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import { AccountScreen } from "@/components/kiosk/account-screen";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
-import { CelebrationLayer } from "@/components/kiosk/celebration-layer";
 import { ParentPanel } from "@/components/kiosk/parent-panel";
 import { PinModal } from "@/components/kiosk/pin-modal";
 import { SetupScreen } from "@/components/kiosk/setup-screen";
-import { playSuccessAudio } from "@/lib/client-audio";
 import {
   getActiveTimeBlock,
   getDateKey,
@@ -523,18 +521,11 @@ export function KioskApp({ mode }: KioskAppProps) {
   }, [toast, clearToast]);
 
   useEffect(() => {
-    if (celebration && toast?.kind === "basari") {
-      clearToast();
-    }
-  }, [celebration, toast, clearToast]);
-
-  useEffect(() => {
-    if (!celebration || !data?.family?.audio_enabled) {
+    if (!celebration) {
       return;
     }
-    const userName = data.users.find((user) => user.id === celebration.userId)?.name;
-    void playSuccessAudio(userName);
-  }, [celebration, data?.family?.audio_enabled, data?.users]);
+    clearCelebration();
+  }, [celebration, clearCelebration]);
 
   const referenceNow = useMemo(() => clockNow ?? new Date(), [clockNow]);
   const allUsers = useMemo(() => data?.users ?? [], [data?.users]);
@@ -597,11 +588,6 @@ export function KioskApp({ mode }: KioskAppProps) {
     () => memberStats.find((item) => item.user.id === selectedUser?.id) ?? null,
     [memberStats, selectedUser?.id]
   );
-
-  const celebrationUser =
-    celebration && data
-      ? allUsers.find((user) => user.id === celebration.userId) ?? null
-      : null;
 
   if (loading && !data) {
     return (
@@ -890,16 +876,6 @@ export function KioskApp({ mode }: KioskAppProps) {
           );
         })}
       </nav>
-
-      <CelebrationLayer
-        open={Boolean(celebration)}
-        userName={celebrationUser?.name ?? selectedUser.name}
-        userAvatar={celebrationUser?.avatar ?? selectedUser.avatar}
-        taskTitle={celebration?.taskTitle ?? ""}
-        points={celebration?.points ?? 0}
-        totalPoints={celebrationUser?.points ?? selectedUser.points}
-        onDone={clearCelebration}
-      />
 
       <PinModal
         open={loginOpen}
