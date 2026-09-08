@@ -4,10 +4,12 @@ function getEnv(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const env = {
   supabaseUrl: getEnv("SUPABASE_URL"),
   supabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY"),
-  useLocalDb: getEnv("USE_LOCAL_DB") === "true",
+  useLocalDb: !isProduction && getEnv("USE_LOCAL_DB") === "true",
   sessionSecret: getEnv("SESSION_SECRET") || "gelistirme-icin-gecici-gizli-anahtar"
 };
 
