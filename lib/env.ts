@@ -18,7 +18,6 @@ export function isSupabaseConfigured() {
     !env.useLocalDb &&
     Boolean(env.supabaseUrl) &&
     Boolean(env.supabaseServiceRoleKey) &&
-    env.supabaseServiceRoleKey.length > 100 &&
     env.supabaseUrl !== "https://proje-kimliginiz.supabase.co" &&
     env.supabaseServiceRoleKey !== "service-role-key"
   );
