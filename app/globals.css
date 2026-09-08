@@ -4235,6 +4235,37 @@ button {
   padding-top: 1rem;
 }
 
+.command-profile-task-group {
+  margin-top: 0.95rem;
+}
+
+.command-profile-task-group:first-of-type {
+  margin-top: 0.75rem;
+}
+
+.command-profile-task-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 4px solid var(--member-accent);
+  background: color-mix(in srgb, var(--member-accent), transparent 91%);
+  padding: 0.65rem 0.9rem;
+}
+
+.command-profile-task-group-head strong {
+  color: var(--command-ink);
+  font-size: 0.86rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.command-profile-task-group-head span {
+  color: var(--command-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 .command-profile-task {
   display: grid;
   grid-template-columns: 3rem 3rem minmax(0, 1fr) minmax(9rem, auto);
@@ -4274,11 +4305,7 @@ button {
 }
 
 .command-profile-task-meta {
-  display: grid;
-  grid-template-columns: 5.8rem 4rem;
-  align-items: center;
-  justify-content: end;
-  gap: 1rem;
+  display: block;
   justify-self: end;
   text-align: right;
 }

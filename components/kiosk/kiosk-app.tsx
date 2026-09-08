@@ -116,6 +116,8 @@ const SCHEDULED_BLOCK_ORDER: Record<Exclude<TimeBlock, "her_zaman">, number> = {
   aksam: 3
 };
 
+const TASK_GROUP_ORDER: TimeBlock[] = ["sabah", "ogleden_sonra", "aksam", "her_zaman"];
+
 function getTurkishBlockLabel(block: ActiveTimeBlock | TimeBlock) {
   switch (block) {
     case "sabah":
@@ -325,6 +327,18 @@ function ProfilesDirectory({
   }
 
   const accent = getMemberAccent(selectedStats.user.color);
+  const groupedTasks = TASK_GROUP_ORDER.map((block) => {
+    const tasks = selectedStats.visibleTasks.filter((task) => task.time_block === block);
+    const completedCount = tasks.filter((task) =>
+      isTaskCompleted(completions, task.id, selectedStats.user.id, dateKey)
+    ).length;
+
+    return {
+      block,
+      tasks,
+      completedCount
+    };
+  }).filter((group) => group.tasks.length > 0);
 
   return (
     <section className="command-profiles-view">
@@ -391,33 +405,42 @@ function ProfilesDirectory({
             <span>Bugün</span>
             <strong>{selectedStats.user.name} görevleri</strong>
           </div>
-          {selectedStats.visibleTasks.length === 0 ? (
+          {groupedTasks.length === 0 ? (
             <div className="command-profile-empty">Bugün için görünen görev yok.</div>
           ) : (
-            selectedStats.visibleTasks.map((task) => {
-              const completed = isTaskCompleted(completions, task.id, selectedStats.user.id, dateKey);
-              const pending = pendingTaskKeys.includes(`${task.id}:${selectedStats.user.id}:${dateKey}`);
-
-              return (
-                <article key={task.id} className={`command-profile-task ${completed ? "is-complete" : ""}`}>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => (completed ? onUndo(task) : onComplete(task))}
-                    className="command-profile-task-check"
-                    aria-label={completed ? "Görevi geri al" : "Görevi tamamla"}
-                  >
-                    {pending ? <RefreshCw className="h-4 w-4 animate-spin" /> : completed ? <Check className="h-5 w-5" /> : null}
-                  </button>
-                  <span className="command-profile-task-icon">{task.icon || DEFAULT_TASK_ICON}</span>
-                  <strong>{task.title}</strong>
-                  <span className="command-profile-task-meta">
-                    <em>{getTurkishBlockLabel(task.time_block)}</em>
-                    <b>{formatAllowance(task.points)}</b>
+            groupedTasks.map((group) => (
+              <div key={group.block} className="command-profile-task-group">
+                <div className="command-profile-task-group-head">
+                  <strong>{getTurkishBlockLabel(group.block)}</strong>
+                  <span>
+                    {group.completedCount}/{group.tasks.length} tamam
                   </span>
-                </article>
-              );
-            })
+                </div>
+                {group.tasks.map((task) => {
+                  const completed = isTaskCompleted(completions, task.id, selectedStats.user.id, dateKey);
+                  const pending = pendingTaskKeys.includes(`${task.id}:${selectedStats.user.id}:${dateKey}`);
+
+                  return (
+                    <article key={task.id} className={`command-profile-task ${completed ? "is-complete" : ""}`}>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => (completed ? onUndo(task) : onComplete(task))}
+                        className="command-profile-task-check"
+                        aria-label={completed ? "Görevi geri al" : "Görevi tamamla"}
+                      >
+                        {pending ? <RefreshCw className="h-4 w-4 animate-spin" /> : completed ? <Check className="h-5 w-5" /> : null}
+                      </button>
+                      <span className="command-profile-task-icon">{task.icon || DEFAULT_TASK_ICON}</span>
+                      <strong>{task.title}</strong>
+                      <span className="command-profile-task-meta">
+                        <b>{formatAllowance(task.points)}</b>
+                      </span>
+                    </article>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
       </article>
