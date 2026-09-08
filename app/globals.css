@@ -3532,11 +3532,14 @@ button {
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(21, 23, 18, 0.12);
-  background:
-    linear-gradient(135deg, rgba(21, 23, 18, 0.96), rgba(43, 49, 39, 0.92)),
-    linear-gradient(90deg, var(--selected-accent), transparent);
-  color: #fffef9;
+  background: rgba(255, 254, 249, 0.86);
   box-shadow: 0 12px 28px rgba(21, 23, 18, 0.1);
+}
+
+.command-title-mark img {
+  width: 2.55rem;
+  height: 2.55rem;
+  object-fit: contain;
 }
 
 .command-header h1 {
