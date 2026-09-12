@@ -10,6 +10,7 @@ import {
   bootstrapLocalApp,
   changeLocalAccountPassword,
   deleteLocalUser,
+  deleteLocalTask,
   getLocalDashboardSnapshot,
   loginLocalAccount,
   registerLocalAccount,
@@ -1413,4 +1414,11 @@ export async function updateFamilySettings(
   if (error) {
     fail("Aile ayarları güncellenemedi", error);
   }
+}
+
+export async function deleteTask(familyId: string, taskId: string) {
+ if (!isSupabaseConfigured()) return deleteLocalTask(familyId, taskId);
+ const { data, error } = await createAdminClient().from("tasks").delete().eq("id", taskId).eq("family_id", familyId).select("id").maybeSingle();
+ if (error) fail("Görev silinemedi", error);
+ if (!data) throw new Error("Görev bulunamadı.");
 }

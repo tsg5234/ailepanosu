@@ -32,6 +32,7 @@ interface ParentPanelProps {
   onSaveUser: (payload: UserFormPayload) => Promise<void>;
   onDeleteUser: (userId: string) => Promise<void>;
   onSaveTask: (payload: TaskFormPayload) => Promise<void>;
+  onDeleteTask: (taskId: string) => Promise<boolean>;
   onReorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   onAdjustPoints: (userId: string, delta: number, note: string) => Promise<void>;
   onUndoTaskCompletion: (
@@ -194,6 +195,7 @@ export function ParentPanel(props: ParentPanelProps) {
     onSaveUser,
     onDeleteUser,
     onSaveTask,
+    onDeleteTask,
     onReorderTasks,
     onAdjustPoints,
     onUndoTaskCompletion,
@@ -441,22 +443,18 @@ export function ParentPanel(props: ParentPanelProps) {
   }, [data, pointsUserId, taskLookup]);
 
   const loadTaskIntoDraft = (task: TaskRecord) => {
-    const focusedOwnerId =
-      taskUserView !== "tum" && task.assigned_to.includes(taskUserView)
-        ? taskUserView
-        : task.assigned_to[0] ?? "";
-
     setTaskDraft({
       id: task.id,
       title: task.title,
       icon: task.icon || DEFAULT_TASK_ICON,
       points: task.points,
-      assignedTo: focusedOwnerId ? [focusedOwnerId] : task.assigned_to,
+      assignedTo: [...task.assigned_to],
       scheduleType: task.schedule_type,
       days: task.days,
       specialDates: task.special_dates,
       timeBlock: task.time_block
     });
+    document.getElementById("parent-task-title")?.focus();
   };
 
   const canReorderTasks = taskUserView !== "tum";
@@ -741,13 +739,14 @@ export function ParentPanel(props: ParentPanelProps) {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <Card title="Görev düzenleyici" description="Tablet ekranında görünecek görevleri planlayın.">
+      <div className="parent-tasks-layout">
+      <Card title={taskDraft.id ? "Görevi düzenle" : "Yeni görev"} description="Kişi, zaman ve harçlık seçin.">
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_100px]">
             <label className="block space-y-2">
               <Label>Başlık</Label>
               <input
+                id="parent-task-title"
                 value={taskDraft.title}
                 onChange={(event) => setTaskDraft((current) => ({ ...current, title: event.target.value }))}
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
@@ -891,10 +890,18 @@ export function ParentPanel(props: ParentPanelProps) {
               </div>
             </div>
           ) : null}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">Görev kimlerin?</legend>
+            <div className="flex flex-wrap gap-3">{taskUsers.map((user) => (
+              <label key={user.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={taskDraft.assignedTo.includes(user.id)} onChange={(event) => setTaskDraft((current) => ({ ...current, assignedTo: event.target.checked ? [...current.assignedTo, user.id] : current.assignedTo.filter((id) => id !== user.id) }))} />{user.name}
+              </label>
+            ))}</div>
+          </fieldset>
           <div className="flex gap-3">
             <button
               onClick={() => onSaveTask(taskDraft)}
-              disabled={working || !taskDraft.assignedTo.length}
+              disabled={working || !taskDraft.title.trim() || !taskDraft.assignedTo.length}
               className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
             >
               {taskDraft.id ? "Güncelle" : "Görev ekle"}
@@ -917,7 +924,7 @@ export function ParentPanel(props: ParentPanelProps) {
         description={
           selectedTaskUser
             ? `${selectedTaskUser.name} için görevleri ara, filtrele ve düzenle.`
-            : "Ara, filtrele ve görev varyasyonlarını daha net görün."
+            : "Görevleri bulun, düzenleyin veya silin."
         }
       >
         <div className="space-y-4">
@@ -932,7 +939,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </label>
             <div className="text-sm font-medium text-[color:var(--text-muted)]">
               {selectedTaskUser ? `${selectedTaskUser.name} için ` : ""}
-              {filteredTaskCount} varyasyon • {filteredTaskGroups.length} başlık
+              {filteredTaskCount} görev
             </div>
           </div>
 
@@ -953,7 +960,7 @@ export function ParentPanel(props: ParentPanelProps) {
             })}
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
+          <details className="task-allowance-summary"><summary>Harçlık özeti</summary>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
                 {selectedTaskUser ? (
@@ -1012,7 +1019,7 @@ export function ParentPanel(props: ParentPanelProps) {
                 </div>
               )
             ) : null}
-          </div>
+          </details>
 
           <div className="space-y-3">
             {filteredTaskGroups.length === 0 ? (
@@ -1030,7 +1037,7 @@ export function ParentPanel(props: ParentPanelProps) {
                       <div className="min-w-0">
                         <div className="truncate text-lg font-semibold">{group.title}</div>
                         <div className="text-sm text-[color:var(--text-muted)]">
-                          {group.entries.length} varyasyon
+                          {group.entries.length} zaman planı
                           {taskUserView === "tum" ? ` • ${group.assignedSummary}` : ""}
                         </div>
                       </div>
@@ -1043,9 +1050,8 @@ export function ParentPanel(props: ParentPanelProps) {
                       const moveScopeIds = getTaskMoveScopeIds(task);
                       const moveIndex = moveScopeIds.indexOf(task.id);
                       return (
-                        <button
+                        <div
                           key={task.id}
-                          onClick={() => loadTaskIntoDraft(task)}
                           className={`w-full rounded-[1.2rem] border px-3 py-3 text-left transition ${
                             active
                               ? "border-slate-900 bg-slate-950 text-white"
@@ -1128,8 +1134,18 @@ export function ParentPanel(props: ParentPanelProps) {
                                 </div>
                               ) : null}
                             </div>
+                          <div className="parent-task-actions">
+                            <button disabled={working} onClick={() => loadTaskIntoDraft(task)}>Düzenle</button>
+                            <button className="is-delete" disabled={working} onClick={async () => {
+                              const names = task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean).join(", ");
+                              if (!window.confirm(task.title + " (" + TIME_BLOCK_LABELS[task.time_block] + ") silinsin mi? Bu görev " + names + " için kaldırılır. Tamamlama kayıtları silinir; kazanılmış harçlık korunur.")) return;
+                              if (await onDeleteTask(task.id)) {
+                                if (taskDraft.id === task.id) setTaskDraft(createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id));
+                              }
+                            }}>Sil</button>
                           </div>
-                        </button>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

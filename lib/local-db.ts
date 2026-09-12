@@ -795,3 +795,12 @@ export async function updateLocalFamilySettings(
   }
   persistState();
 }
+
+export async function deleteLocalTask(familyId: string, taskId: string) {
+ const state = getFamilyState(familyId);
+ if (!state.tasks.some((task) => task.id === taskId)) throw new Error("Görev bulunamadı.");
+ state.tasks = state.tasks.filter((task) => task.id !== taskId);
+ state.completions = state.completions.filter((item) => item.task_id !== taskId);
+ state.pointEvents = state.pointEvents.map((item) => item.task_id === taskId ? { ...item, task_id: null } : item);
+ persistState();
+}

@@ -4614,3 +4614,13 @@ button {
     font-weight: 900;
   }
 }
+
+.parent-tasks-layout { display: grid; grid-template-columns: minmax(300px, .7fr) minmax(0, 1.3fr); gap: 20px; align-items: start; }
+.parent-tasks-layout .parent-management-heading { flex-direction: column; gap: 8px; }
+.parent-tasks-layout .parent-management-heading p { text-align: left; }
+.parent-task-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.parent-task-actions button { padding: 8px 12px; min-height: 36px; background: #edf0e8; color: #25351f; font-size: 13px; font-weight: 700; }
+.parent-task-actions .is-delete { color: #a42d2d; background: #fff0ed; }
+.task-allowance-summary { font-size: 13px; color: #536052; }
+.task-allowance-summary summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+@media (max-width: 1200px) { .parent-tasks-layout { grid-template-columns: minmax(0, 1fr); } }

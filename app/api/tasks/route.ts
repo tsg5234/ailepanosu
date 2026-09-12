@@ -1,5 +1,5 @@
 import { requireParentSession } from "@/lib/auth";
-import { getDashboardSnapshot, saveTask } from "@/lib/db";
+import { deleteTask, getDashboardSnapshot, saveTask } from "@/lib/db";
 import { jsonError, jsonOk } from "@/lib/http";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type { TaskFormPayload } from "@/lib/types";
@@ -26,4 +26,14 @@ export async function POST(request: Request) {
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Görev kaydedilemedi", 500);
   }
+}
+
+export async function DELETE(request: Request) {
+ try {
+ const session = await requireParentSession();
+ const body = await request.json();
+ if (typeof body.taskId !== "string" || !body.taskId.trim()) return jsonError("Görev kimliği gerekli.");
+ await deleteTask(session.familyId, body.taskId);
+ return jsonOk(await getDashboardSnapshot());
+ } catch (error) { return jsonError(error instanceof Error ? error.message : "Görev silinemedi", 500); }
 }

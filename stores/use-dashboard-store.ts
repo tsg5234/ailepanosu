@@ -65,6 +65,7 @@ interface DashboardStore {
   saveUser: (payload: UserFormPayload) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   saveTask: (payload: TaskFormPayload) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<boolean>;
   reorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   saveReward: (payload: RewardFormPayload) => Promise<void>;
   resolveRedemption: (
@@ -540,6 +541,18 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
           message: error instanceof Error ? error.message : "Görev kaydedilemedi."
         }
       });
+    }
+  },
+  async deleteTask(taskId) {
+    set({ working: true });
+    try {
+      const data = await requestJson<DashboardPayload>("/api/tasks", { method: "DELETE", body: JSON.stringify({ taskId }) });
+      withDashboardState(set, data);
+      set({ working: false, toast: { kind: "basari", message: "Görev silindi." } });
+      return true;
+    } catch (error) {
+      set({ working: false, toast: { kind: "hata", message: error instanceof Error ? error.message : "Görev silinemedi." } });
+      return false;
     }
   },
   async reorderTasks(orderedTaskIds) {

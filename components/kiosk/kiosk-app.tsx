@@ -478,6 +478,7 @@ export function KioskApp({ mode }: KioskAppProps) {
     saveUser,
     deleteUser,
     saveTask,
+    deleteTask,
     reorderTasks,
     adjustPoints,
     resetProgress,
@@ -695,6 +696,7 @@ export function KioskApp({ mode }: KioskAppProps) {
           onSaveUser={saveUser}
           onDeleteUser={deleteUser}
           onSaveTask={saveTask}
+          onDeleteTask={deleteTask}
           onReorderTasks={reorderTasks}
           onAdjustPoints={adjustPoints}
           onUndoTaskCompletion={undoTaskCompletion}
@@ -894,6 +896,7 @@ export function KioskApp({ mode }: KioskAppProps) {
         onSaveUser={saveUser}
         onDeleteUser={deleteUser}
         onSaveTask={saveTask}
+          onDeleteTask={deleteTask}
         onReorderTasks={reorderTasks}
         onAdjustPoints={adjustPoints}
         onUndoTaskCompletion={undoTaskCompletion}
