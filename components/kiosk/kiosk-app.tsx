@@ -427,7 +427,7 @@ function ProfilesDirectory({
                         className="command-profile-task-check"
                         aria-label={completed ? "Görevi geri al" : "Görevi tamamla"}
                       >
-                        {pending ? <RefreshCw className="h-4 w-4 animate-spin" /> : completed ? <Check className="h-5 w-5" /> : null}
+                        {completed ? <Check className="h-5 w-5" /> : null}
                       </button>
                       <strong>{task.title}</strong>
                       <span className="command-profile-task-meta">
