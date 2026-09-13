@@ -36,7 +36,6 @@ interface FamilyTimingSettings {
   day_reset_time?: string | null;
 }
 
-const MORNING_START_MINUTES = 6 * 60;
 const AFTERNOON_START_MINUTES = 12 * 60;
 const EVENING_START_MINUTES = 18 * 60;
 
@@ -150,10 +149,6 @@ export function getActiveTimeBlock(
   void _role;
 
   const minutes = getClockMinutes(date);
-
-  if (minutes < MORNING_START_MINUTES) {
-    return "gece";
-  }
 
   if (minutes < AFTERNOON_START_MINUTES) {
     return "sabah";
