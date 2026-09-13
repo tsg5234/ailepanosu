@@ -824,12 +824,6 @@ export function ParentPanel(props: ParentPanelProps) {
               </div>
             </div>
           ) : null}
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">Seçili profil</legend>
-            <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800">
-              {selectedTaskUser?.name ?? "Profil seçin"}
-            </div>
-          </fieldset>
           <div className="flex gap-3">
             <button
               onClick={() => onSaveTask(taskDraft)}
