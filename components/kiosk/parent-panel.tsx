@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Settings2, ShieldCheck, Star, Users, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { formatAllowance } from "@/lib/allowance";
@@ -51,7 +51,7 @@ interface ParentPanelProps {
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
-  { id: "harcliklar", label: "Para", icon: Star },
+  { id: "harcliklar", label: "Para", icon: Wallet },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
 ];
 
@@ -139,7 +139,8 @@ const WEEKDAY_PRESETS = [
 
 type TaskListTimeFilter = "tum" | TimeBlock;
 
-const POINT_DELTA_PRESETS = [10, 20, 50, 100, 200, -10, -20, -50, -100, -200];
+const POINT_ADD_PRESETS = [10, 20, 50, 100, 200];
+const POINT_SPEND_PRESETS = [-10, -20, -50, -100, -200];
 
 const TASK_LIST_TIME_FILTERS: Array<{ id: TaskListTimeFilter; label: string }> = [
   { id: "tum", label: "Tüm" },
@@ -1088,30 +1089,34 @@ export function ParentPanel(props: ParentPanelProps) {
           </label>
           <div className="space-y-2">
             <Label>Hızlı tutar seç</Label>
-            <div className="flex flex-wrap gap-2">
-              {POINT_DELTA_PRESETS.map((delta) => {
-                const active = parsedPointsDelta === delta;
-                const negative = delta < 0;
+            <div className="space-y-2">
+              {[POINT_ADD_PRESETS, POINT_SPEND_PRESETS].map((presetGroup, groupIndex) => (
+                <div key={groupIndex} className="flex flex-wrap gap-2">
+                  {presetGroup.map((delta) => {
+                    const active = parsedPointsDelta === delta;
+                    const negative = delta < 0;
 
-                return (
-                  <button
-                    key={delta}
-                    type="button"
-                    onClick={() => setPointsDeltaInput(String(delta))}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      active
-                        ? negative
-                          ? "bg-rose-600 text-white"
-                          : "bg-emerald-600 text-white"
-                        : negative
-                          ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-                          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                    }`}
-                  >
-                    {delta > 0 ? `+${formatAllowance(delta)}` : formatAllowance(delta)}
-                  </button>
-                );
-              })}
+                    return (
+                      <button
+                        key={delta}
+                        type="button"
+                        onClick={() => setPointsDeltaInput(String(delta))}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                          active
+                            ? negative
+                              ? "bg-rose-600 text-white"
+                              : "bg-emerald-600 text-white"
+                            : negative
+                              ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+                              : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                        }`}
+                      >
+                        {delta > 0 ? `+${formatAllowance(delta)}` : formatAllowance(delta)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
             <div className="text-xs text-[color:var(--text-muted)]">
               Artı tutar hesaba eklenir, eksi tutar harcama olarak düşülür.
