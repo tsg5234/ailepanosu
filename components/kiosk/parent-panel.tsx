@@ -51,7 +51,7 @@ interface ParentPanelProps {
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
-  { id: "harcliklar", label: "Para", icon: Wallet },
+  { id: "harcliklar", label: "Hesap", icon: Wallet },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
 ];
 
@@ -204,7 +204,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [pointsUserId, setPointsUserId] = useState("");
   const [pointsDeltaInput, setPointsDeltaInput] = useState("10");
-  const [pointsNote, setPointsNote] = useState("Para hareketi");
+  const [pointsNote, setPointsNote] = useState("Hesap hareketi");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [taskUserView, setTaskUserView] = useState<string>("");
@@ -1044,7 +1044,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
   const pointsTab = (
     <div className="max-w-3xl">
-      <Card title="Para hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
+      <Card title="Hesap hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Profil</Label>
@@ -1091,7 +1091,7 @@ export function ParentPanel(props: ParentPanelProps) {
             <Label>Hızlı tutar seç</Label>
             <div className="space-y-2">
               {[POINT_ADD_PRESETS, POINT_SPEND_PRESETS].map((presetGroup, groupIndex) => (
-                <div key={groupIndex} className="flex flex-wrap gap-2">
+                <div key={groupIndex} className="grid grid-cols-5 gap-2">
                   {presetGroup.map((delta) => {
                     const active = parsedPointsDelta === delta;
                     const negative = delta < 0;
@@ -1101,7 +1101,7 @@ export function ParentPanel(props: ParentPanelProps) {
                         key={delta}
                         type="button"
                         onClick={() => setPointsDeltaInput(String(delta))}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                        className={`min-w-0 rounded-full px-3 py-2 text-sm font-semibold transition ${
                           active
                             ? negative
                               ? "bg-rose-600 text-white"
