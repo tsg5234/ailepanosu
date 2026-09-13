@@ -201,9 +201,6 @@ export function ParentPanel(props: ParentPanelProps) {
   const [specialDate, setSpecialDate] = useState("");
   const [familyName, setFamilyName] = useState("");
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [childSleepTime, setChildSleepTime] = useState("22:00");
-  const [parentSleepTime, setParentSleepTime] = useState("00:00");
-  const [dayResetTime, setDayResetTime] = useState("00:00");
   const [pointsUserId, setPointsUserId] = useState("");
   const [pointsDeltaInput, setPointsDeltaInput] = useState("10");
   const [pointsNote, setPointsNote] = useState("Harçlık düzeltmesi");
@@ -223,9 +220,6 @@ export function ParentPanel(props: ParentPanelProps) {
     }
     setFamilyName(data.family.name);
     setAudioEnabled(data.family.audio_enabled);
-    setChildSleepTime(data.family.child_sleep_time || "22:00");
-    setParentSleepTime(data.family.parent_sleep_time || "00:00");
-    setDayResetTime(data.family.day_reset_time || "00:00");
     setPointsUserId((current) => current || data.users[0]?.id || "");
   }, [data]);
 
@@ -429,10 +423,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const handleSaveSettings = async () => {
     await onUpdateSettings({
       name: familyName,
-      audioEnabled,
-      childSleepTime,
-      parentSleepTime,
-      dayResetTime
+      audioEnabled
     });
   };
 
@@ -1155,7 +1146,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
   const settingsTab = (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Aile ayarları" description="Ses, uyku saati ve kiosk davranışını yönetin.">
+      <Card title="Aile ayarları" description="Aile adı ve sesli geri bildirimi yönetin.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Aile adı</Label>
@@ -1177,41 +1168,6 @@ export function ParentPanel(props: ParentPanelProps) {
               className="h-5 w-5"
             />
           </label>
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="block space-y-2">
-              <Label>Çocuk uyku saati</Label>
-              <input
-                type="time"
-                step="60"
-                value={childSleepTime}
-                onChange={(event) => setChildSleepTime(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-              />
-            </label>
-            <label className="block space-y-2">
-              <Label>Ebeveyn uyku saati</Label>
-              <input
-                type="time"
-                step="60"
-                value={parentSleepTime}
-                onChange={(event) => setParentSleepTime(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-              />
-            </label>
-            <label className="block space-y-2">
-              <Label>Gün reset saati</Label>
-              <input
-                type="time"
-                step="60"
-                value={dayResetTime}
-                onChange={(event) => setDayResetTime(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-              />
-            </label>
-          </div>
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-            Kioskta çocuk ve ebeveyn için ayrı uyku saati kullanılır. Uyku saatinden sonra görev yerine sade gün özeti gösterilir. Gün reset saati ise yeni günün hangi saatte başlayacağını belirler.
-          </div>
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleSaveSettings}

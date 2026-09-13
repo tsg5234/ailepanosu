@@ -36,7 +36,6 @@ interface FamilyTimingSettings {
   day_reset_time?: string | null;
 }
 
-const MINUTES_PER_DAY = 24 * 60;
 const MORNING_START_MINUTES = 6 * 60;
 const AFTERNOON_START_MINUTES = 12 * 60;
 const EVENING_START_MINUTES = 18 * 60;
@@ -48,45 +47,22 @@ function getTimeParts(date: Date, options: Intl.DateTimeFormatOptions) {
   }).formatToParts(date);
 }
 
-function parseTimeValue(value: string | null | undefined, fallbackMinutes: number) {
-  if (!value) {
-    return fallbackMinutes;
-  }
-
-  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
-
-  if (!match) {
-    return fallbackMinutes;
-  }
-
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-function formatMinutes(minutes: number) {
-  const safeMinutes = ((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
-  const hour = String(Math.floor(safeMinutes / 60)).padStart(2, "0");
-  const minute = String(safeMinutes % 60).padStart(2, "0");
-  return `${hour}:${minute}`;
-}
-
 export function getFamilyTimingSettings(
-  settings?: FamilyTimingSettings | FamilyRecord | null,
-  role?: UserRole
+  _settings?: FamilyTimingSettings | FamilyRecord | null,
+  _role?: UserRole
 ) {
-  const childSleepMinutes = parseTimeValue(settings?.child_sleep_time, 22 * 60);
-  const parentSleepMinutes = parseTimeValue(settings?.parent_sleep_time, 0);
-  const dayResetMinutes = parseTimeValue(settings?.day_reset_time, 0);
-  const activeSleepMinutes = role === "ebeveyn" ? parentSleepMinutes : childSleepMinutes;
+  void _settings;
+  void _role;
 
   return {
-    childSleepMinutes,
-    parentSleepMinutes,
-    dayResetMinutes,
-    childSleepTime: formatMinutes(childSleepMinutes),
-    parentSleepTime: formatMinutes(parentSleepMinutes),
-    activeSleepMinutes,
-    activeSleepTime: formatMinutes(activeSleepMinutes),
-    dayResetTime: formatMinutes(dayResetMinutes)
+    childSleepMinutes: 0,
+    parentSleepMinutes: 0,
+    dayResetMinutes: 0,
+    childSleepTime: DEFAULT_DAY_RESET_TIME,
+    parentSleepTime: DEFAULT_DAY_RESET_TIME,
+    activeSleepMinutes: 0,
+    activeSleepTime: DEFAULT_DAY_RESET_TIME,
+    dayResetTime: DEFAULT_DAY_RESET_TIME
   };
 }
 
@@ -101,9 +77,10 @@ function getClockMinutes(date: Date) {
   return hour * 60 + minute;
 }
 
-function getReferenceDate(date: Date, settings?: FamilyTimingSettings | FamilyRecord | null) {
-  const { dayResetMinutes } = getFamilyTimingSettings(settings);
-  return new Date(date.getTime() - dayResetMinutes * 60_000);
+function getReferenceDate(date: Date, _settings?: FamilyTimingSettings | FamilyRecord | null) {
+  void _settings;
+
+  return date;
 }
 
 export function getDateKey(
@@ -166,16 +143,15 @@ export function getWeekdayKey(
 
 export function getActiveTimeBlock(
   date = new Date(),
-  settings?: FamilyTimingSettings | FamilyRecord | null,
-  role?: UserRole
+  _settings?: FamilyTimingSettings | FamilyRecord | null,
+  _role?: UserRole
 ): ActiveTimeBlock {
-  const minutes = getClockMinutes(date);
-  const { activeSleepMinutes } = getFamilyTimingSettings(settings, role);
+  void _settings;
+  void _role;
 
-  if (
-    minutes < MORNING_START_MINUTES ||
-    (activeSleepMinutes >= MORNING_START_MINUTES && minutes >= activeSleepMinutes)
-  ) {
+  const minutes = getClockMinutes(date);
+
+  if (minutes < MORNING_START_MINUTES) {
     return "gece";
   }
 
