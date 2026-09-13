@@ -1058,17 +1058,28 @@ export function ParentPanel(props: ParentPanelProps) {
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Profil</Label>
-            <select
-              value={pointsUserId}
-              onChange={(event) => setPointsUserId(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-            >
-              {data?.users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-wrap gap-2">
+              {data?.users.map((user) => {
+                const active = pointsUserId === user.id;
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => setPointsUserId(user.id)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                      active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-base">
+                        <AvatarDisplay avatar={user.avatar} name={user.name} />
+                      </span>
+                      <span>{user.name}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </label>
           <label className="block space-y-2">
             <Label>Tutar</Label>
@@ -1134,7 +1145,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
               onAdjustPoints(pointsUserId, parsedPointsDelta, pointsNote);
             }}
-            disabled={working || !canSubmitPoints}
+            disabled={working || !pointsUserId || !canSubmitPoints}
             className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
           >
             Hareketi kaydet
