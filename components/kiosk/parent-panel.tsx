@@ -190,7 +190,6 @@ export function ParentPanel(props: ParentPanelProps) {
     onDeleteTask,
     onReorderTasks,
     onAdjustPoints,
-    onUndoTaskCompletion,
     onResetProgress,
     onUpdateSettings,
     onChangeAccountPassword,
@@ -274,10 +273,6 @@ export function ParentPanel(props: ParentPanelProps) {
   );
   const taskUsers = data?.users ?? [];
   const selectedTaskUser = taskUserView ? userLookup[taskUserView] : undefined;
-  const taskLookup = useMemo(
-    () => Object.fromEntries((data?.tasks ?? []).map((task) => [task.id, task])),
-    [data?.tasks]
-  );
   const filteredTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
     return (data?.tasks ?? [])
@@ -398,21 +393,6 @@ export function ParentPanel(props: ParentPanelProps) {
   const parsedPointsDelta =
     pointsDeltaInput.trim() !== "" && pointsDeltaInput !== "-" ? Number(pointsDeltaInput) : null;
   const canSubmitPoints = parsedPointsDelta !== null && Number.isFinite(parsedPointsDelta);
-  const selectedPointUser = pointsUserId ? userLookup[pointsUserId] : undefined;
-  const todaysCompletedTasks = useMemo(() => {
-    if (!data || !pointsUserId) {
-      return [];
-    }
-
-    return data.completions
-      .filter((completion) => completion.user_id === pointsUserId && completion.completion_date === data.today.dateKey)
-      .map((completion) => ({
-        completion,
-        task: taskLookup[completion.task_id]
-      }))
-      .filter((item) => item.task)
-      .sort((left, right) => Date.parse(right.completion.created_at) - Date.parse(left.completion.created_at));
-  }, [data, pointsUserId, taskLookup]);
 
   const loadTaskIntoDraft = (task: TaskRecord) => {
     setTaskDraft({
@@ -1073,11 +1053,11 @@ export function ParentPanel(props: ParentPanelProps) {
   );
 
   const pointsTab = (
-    <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card title="Harçlık düzenleme" description="Bonus ve düzeltme harçlıklarını manuel işleyin.">
+    <div className="max-w-3xl">
+      <Card title="Harçlık hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
         <div className="space-y-4">
           <label className="block space-y-2">
-            <Label>Kullanıcı</Label>
+            <Label>Profil</Label>
             <select
               value={pointsUserId}
               onChange={(event) => setPointsUserId(event.target.value)}
@@ -1091,7 +1071,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </select>
           </label>
           <label className="block space-y-2">
-            <Label>Harçlık farkı</Label>
+            <Label>Tutar</Label>
             <input
               type="text"
               inputMode="numeric"
@@ -1107,7 +1087,7 @@ export function ParentPanel(props: ParentPanelProps) {
             />
           </label>
           <div className="space-y-2">
-            <Label>Hızlı harçlık seç</Label>
+            <Label>Hızlı tutar seç</Label>
             <div className="flex flex-wrap gap-2">
               {POINT_DELTA_PRESETS.map((delta) => {
                 const active = parsedPointsDelta === delta;
@@ -1134,7 +1114,7 @@ export function ParentPanel(props: ParentPanelProps) {
               })}
             </div>
             <div className="text-xs text-[color:var(--text-muted)]">
-              Eksi değer harçlık düşürür, artı değer bonus harçlık ekler.
+              Artı tutar hesaba eklenir, eksi tutar harcama olarak düşülür.
             </div>
           </div>
           <label className="block space-y-2">
@@ -1142,6 +1122,7 @@ export function ParentPanel(props: ParentPanelProps) {
             <input
               value={pointsNote}
               onChange={(event) => setPointsNote(event.target.value)}
+              placeholder="Bayram harçlığı, oyuncak harcaması, hediye para..."
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
             />
           </label>
@@ -1156,67 +1137,10 @@ export function ParentPanel(props: ParentPanelProps) {
             disabled={working || !canSubmitPoints}
             className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
           >
-            Harcligi isle
+            Hareketi kaydet
           </button>
         </div>
       </Card>
-
-      <div className="space-y-5">
-        <Card
-          title="Bugün tamamlananlar"
-          description={`${selectedPointUser?.name ?? "Seçili kullanıcı"} için yanlış işaretlenen görevleri geri alın.`}
-        >
-          <div className="space-y-3">
-            {todaysCompletedTasks.map(({ completion, task }) => (
-              <div
-                key={completion.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-white/80 p-4"
-              >
-                <div>
-                  <div className="font-semibold">{task.title}</div>
-                  <div className="text-sm text-[color:var(--text-muted)]">
-                    {TIME_BLOCK_LABELS[task.time_block]} • {formatAllowance(task.points)}
-                  </div>
-                </div>
-                <button
-                  onClick={() =>
-                    onUndoTaskCompletion(task.id, completion.user_id, completion.completion_date, task.title)
-                  }
-                  disabled={working}
-                  className="rounded-full bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-60"
-                >
-                  Geri al
-                </button>
-              </div>
-            ))}
-            {todaysCompletedTasks.length === 0 ? (
-              <div className="rounded-[1.5rem] bg-white/80 p-4 text-sm text-[color:var(--text-muted)]">
-                Bugün bu kullanıcı için tamamlanan görev yok.
-              </div>
-            ) : null}
-          </div>
-        </Card>
-
-        <Card title="Son hareketler" description="Görev ve ödül geçmişi burada görünür.">
-          <div className="space-y-3">
-            {data?.pointEvents.map((event) => (
-              <div key={event.id} className="flex items-center justify-between rounded-[1.5rem] border border-slate-200 bg-white/80 p-4">
-                <div>
-                  <div className="font-semibold">{userLookup[event.user_id]?.name}</div>
-                  <div className="text-sm text-[color:var(--text-muted)]">{event.note || "Harçlık hareketi"}</div>
-                </div>
-                <div
-                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                    event.delta >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                  }`}
-                >
-                  {event.delta > 0 ? `+${formatAllowance(event.delta)}` : formatAllowance(event.delta)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
     </div>
   );
 
