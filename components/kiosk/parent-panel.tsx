@@ -51,7 +51,7 @@ interface ParentPanelProps {
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
-  { id: "harcliklar", label: "Harçlık", icon: Star },
+  { id: "harcliklar", label: "Para", icon: Star },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
 ];
 
@@ -139,7 +139,7 @@ const WEEKDAY_PRESETS = [
 
 type TaskListTimeFilter = "tum" | TimeBlock;
 
-const POINT_DELTA_PRESETS = [10, 20, 50, -10, -20, -50];
+const POINT_DELTA_PRESETS = [10, 20, 50, 100, 200, -10, -20, -50, -100, -200];
 
 const TASK_LIST_TIME_FILTERS: Array<{ id: TaskListTimeFilter; label: string }> = [
   { id: "tum", label: "Tüm" },
@@ -203,7 +203,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [pointsUserId, setPointsUserId] = useState("");
   const [pointsDeltaInput, setPointsDeltaInput] = useState("10");
-  const [pointsNote, setPointsNote] = useState("Harçlık düzeltmesi");
+  const [pointsNote, setPointsNote] = useState("Para hareketi");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [taskUserView, setTaskUserView] = useState<string>("");
@@ -1043,7 +1043,7 @@ export function ParentPanel(props: ParentPanelProps) {
 
   const pointsTab = (
     <div className="max-w-3xl">
-      <Card title="Harçlık hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
+      <Card title="Para hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
         <div className="space-y-4">
           <label className="block space-y-2">
             <Label>Profil</Label>
