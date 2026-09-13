@@ -183,6 +183,121 @@ function getTaskActionKey(taskId: string, userId: string, dateKey: string) {
   return `${taskId}:${userId}:${dateKey}`;
 }
 
+function createOptimisticId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function completeTaskOptimistically(
+  data: DashboardPayload | null,
+  taskId: string,
+  userId: string,
+  dateKey: string,
+  taskTitle: string,
+  points: number
+) {
+  if (!data?.family) {
+    return data;
+  }
+
+  const alreadyCompleted = data.completions.some(
+    (completion) =>
+      completion.task_id === taskId &&
+      completion.user_id === userId &&
+      completion.completion_date === dateKey
+  );
+
+  if (alreadyCompleted) {
+    return data;
+  }
+
+  const now = new Date().toISOString();
+
+  return {
+    ...data,
+    users: data.users.map((user) =>
+      user.id === userId ? { ...user, points: user.points + points } : user
+    ),
+    completions: [
+      ...data.completions,
+      {
+        id: createOptimisticId("completion"),
+        family_id: data.family.id,
+        user_id: userId,
+        task_id: taskId,
+        completion_date: dateKey,
+        points_earned: points,
+        created_at: now
+      }
+    ],
+    pointEvents: [
+      {
+        id: createOptimisticId("point-event"),
+        family_id: data.family.id,
+        user_id: userId,
+        delta: points,
+        source: "gorev" as const,
+        task_id: taskId,
+        reward_id: null,
+        note: `Görev tamamlandı: ${taskTitle}`,
+        created_at: now
+      },
+      ...data.pointEvents
+    ]
+  };
+}
+
+function undoTaskOptimistically(
+  data: DashboardPayload | null,
+  taskId: string,
+  userId: string,
+  dateKey: string
+) {
+  if (!data) {
+    return { data, pointsChange: 0 };
+  }
+
+  const completion = data.completions.find(
+    (item) =>
+      item.task_id === taskId &&
+      item.user_id === userId &&
+      item.completion_date === dateKey
+  );
+
+  if (!completion) {
+    return { data, pointsChange: 0 };
+  }
+
+  const pointsChange = -completion.points_earned;
+  const now = new Date().toISOString();
+
+  return {
+    data: {
+      ...data,
+      users: data.users.map((user) =>
+        user.id === userId ? { ...user, points: user.points + pointsChange } : user
+      ),
+      completions: data.completions.filter((item) => item.id !== completion.id),
+      pointEvents: data.family
+        ? [
+            {
+              id: createOptimisticId("point-event"),
+              family_id: data.family.id,
+              user_id: userId,
+              delta: pointsChange,
+              source: "gorev" as const,
+              task_id: taskId,
+              reward_id: null,
+              note: "Görev geri alındı",
+              created_at: now
+            },
+            ...data.pointEvents
+          ]
+        : data.pointEvents
+    },
+    pointsChange
+  };
+}
+
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   data: null,
   activeProfileId: null,
@@ -382,9 +497,16 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     }
 
     set((state) => ({
-      working: true,
+      data: completeTaskOptimistically(state.data, taskId, userId, dateKey, taskTitle, points),
+      working: false,
       error: null,
-      pendingTaskKeys: [...state.pendingTaskKeys, taskKey]
+      pendingTaskKeys: [...state.pendingTaskKeys, taskKey],
+      celebration: {
+        userId,
+        taskTitle,
+        points,
+        key: (state.celebration?.key ?? 0) + 1
+      }
     }));
 
     try {
@@ -397,15 +519,16 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       set((state) => ({
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
-        celebration: {
-          userId,
-          taskTitle,
-          points,
-          key: (state.celebration?.key ?? 0) + 1
-        },
         toast: { kind: "basari", message: "Aferin! Görev işlendi." }
       }));
     } catch (error) {
+      try {
+        const data = await requestJson<DashboardPayload>("/api/dashboard");
+        withDashboardState(set, data);
+      } catch {
+        // Keep the optimistic screen if the recovery fetch also fails; the error toast explains the failed save.
+      }
+
       set((state) => ({
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
@@ -424,7 +547,8 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     }
 
     set((state) => ({
-      working: true,
+      data: undoTaskOptimistically(state.data, taskId, userId, dateKey).data,
+      working: false,
       error: null,
       pendingTaskKeys: [...state.pendingTaskKeys, taskKey]
     }));
@@ -442,6 +566,13 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         toast: { kind: "bilgi", message: `${taskTitle} geri alindi.` }
       }));
     } catch (error) {
+      try {
+        const data = await requestJson<DashboardPayload>("/api/dashboard");
+        withDashboardState(set, data);
+      } catch {
+        // Keep the optimistic screen if the recovery fetch also fails; the error toast explains the failed save.
+      }
+
       set((state) => ({
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
