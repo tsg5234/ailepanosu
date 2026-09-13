@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, CheckCircle2, Settings2, ShieldCheck, Star, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Settings2, ShieldCheck, Star, Users, X } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { formatAllowance } from "@/lib/allowance";
@@ -176,18 +176,6 @@ function getTaskScheduleSummary(task: TaskRecord) {
   return task.special_dates.join(", ");
 }
 
-function summarizeAssignedUsers(names: string[]) {
-  if (names.length === 0) {
-    return "Atama yok";
-  }
-
-  if (names.length <= 2) {
-    return names.join(", ");
-  }
-
-  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-}
-
 export function ParentPanel(props: ParentPanelProps) {
   const {
     open,
@@ -224,8 +212,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [pointsNote, setPointsNote] = useState("Harçlık düzeltmesi");
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
-  const [showTaskPotentialDetails, setShowTaskPotentialDetails] = useState(false);
-  const [taskUserView, setTaskUserView] = useState<string>("tum");
+  const [taskUserView, setTaskUserView] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -247,13 +234,13 @@ export function ParentPanel(props: ParentPanelProps) {
 
   useEffect(() => {
     if (!data?.users.length) {
-      setTaskUserView("tum");
+      setTaskUserView("");
       return;
     }
 
     const validUserIds = new Set(data.users.map((user) => user.id));
 
-    setTaskUserView((current) => (current === "tum" || validUserIds.has(current) ? current : data.users[0].id));
+    setTaskUserView((current) => (validUserIds.has(current) ? current : data.users[0].id));
     setTaskDraft((current) => {
       const currentOwnerId = current.assignedTo[0];
       if (currentOwnerId && validUserIds.has(currentOwnerId)) {
@@ -265,7 +252,7 @@ export function ParentPanel(props: ParentPanelProps) {
   }, [data?.users]);
 
   useEffect(() => {
-    if (taskUserView === "tum") {
+    if (!taskUserView) {
       return;
     }
 
@@ -286,7 +273,7 @@ export function ParentPanel(props: ParentPanelProps) {
     [data?.users]
   );
   const taskUsers = data?.users ?? [];
-  const selectedTaskUser = taskUserView !== "tum" ? userLookup[taskUserView] : undefined;
+  const selectedTaskUser = taskUserView ? userLookup[taskUserView] : undefined;
   const taskLookup = useMemo(
     () => Object.fromEntries((data?.tasks ?? []).map((task) => [task.id, task])),
     [data?.tasks]
@@ -295,7 +282,7 @@ export function ParentPanel(props: ParentPanelProps) {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
     return (data?.tasks ?? [])
       .filter((task) => {
-      const matchesUser = taskUserView === "tum" || task.assigned_to.includes(taskUserView);
+      const matchesUser = Boolean(taskUserView) && task.assigned_to.includes(taskUserView);
       if (!matchesUser) {
         return false;
       }
@@ -340,43 +327,28 @@ export function ParentPanel(props: ParentPanelProps) {
       {
         key: string;
         title: string;
-        icon: string;
         entries: TaskRecord[];
-        assignedSummary: string;
       }
     >();
 
     filteredTasks.forEach((task) => {
       const key = task.title.trim().toLocaleLowerCase("tr-TR");
-      const assignedNames = Array.from(
-        new Set(task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean) as string[])
-      );
 
       const existing = grouped.get(key);
       if (existing) {
         existing.entries.push(task);
-        const mergedNames = Array.from(
-          new Set(
-            existing.entries.flatMap((item) =>
-              item.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean) as string[]
-            )
-          )
-        );
-        existing.assignedSummary = summarizeAssignedUsers(mergedNames);
         return;
       }
 
       grouped.set(key, {
         key,
         title: task.title,
-        icon: task.icon || DEFAULT_TASK_ICON,
-        entries: [task],
-        assignedSummary: summarizeAssignedUsers(assignedNames)
+        entries: [task]
       });
     });
 
     return Array.from(grouped.values());
-  }, [filteredTasks, userLookup]);
+  }, [filteredTasks]);
   const filteredTaskCount = useMemo(
     () => filteredTaskGroups.reduce((total, group) => total + group.entries.length, 0),
     [filteredTaskGroups]
@@ -419,12 +391,8 @@ export function ParentPanel(props: ParentPanelProps) {
         return left.user.name.localeCompare(right.user.name, "tr");
       });
   }, [data]);
-  const todaysFamilyPotential = useMemo(
-    () => todaysPotentialByUser.reduce((total, item) => total + item.points, 0),
-    [todaysPotentialByUser]
-  );
   const selectedTaskUserPotential = useMemo(
-    () => (taskUserView === "tum" ? undefined : todaysPotentialByUser.find((item) => item.user.id === taskUserView)),
+    () => (taskUserView ? todaysPotentialByUser.find((item) => item.user.id === taskUserView) : undefined),
     [taskUserView, todaysPotentialByUser]
   );
   const parsedPointsDelta =
@@ -452,7 +420,7 @@ export function ParentPanel(props: ParentPanelProps) {
       title: task.title,
       icon: task.icon || DEFAULT_TASK_ICON,
       points: task.points,
-      assignedTo: [...task.assigned_to],
+      assignedTo: taskUserView ? [taskUserView] : [...task.assigned_to],
       scheduleType: task.schedule_type,
       days: task.days,
       specialDates: task.special_dates,
@@ -461,7 +429,7 @@ export function ParentPanel(props: ParentPanelProps) {
     document.getElementById("parent-task-title")?.focus();
   };
 
-  const canReorderTasks = taskUserView !== "tum";
+  const canReorderTasks = Boolean(taskUserView);
 
   const getTaskMoveScopeIds = (task: TaskRecord) =>
     filteredTasks.filter((item) => item.time_block === task.time_block).map((item) => item.id);
@@ -708,18 +676,10 @@ export function ParentPanel(props: ParentPanelProps) {
           <div>
             <div className="text-sm font-semibold text-slate-950">Kişiye göre görev yönetimi</div>
             <div className="text-sm text-[color:var(--text-muted)]">
-              Her profilin görevini ve harçlığını ayrı ayrı planla.
+              İşlem yapmadan önce profili seçin.
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setTaskUserView("tum")}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                taskUserView === "tum" ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
-              }`}
-            >
-              Tümü
-            </button>
             {taskUsers.map((user) => {
               const active = taskUserView === user.id;
               return (
@@ -895,24 +855,22 @@ export function ParentPanel(props: ParentPanelProps) {
             </div>
           ) : null}
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">Görev kimlerin?</legend>
-            <div className="flex flex-wrap gap-3">{taskUsers.map((user) => (
-              <label key={user.id} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={taskDraft.assignedTo.includes(user.id)} onChange={(event) => setTaskDraft((current) => ({ ...current, assignedTo: event.target.checked ? [...current.assignedTo, user.id] : current.assignedTo.filter((id) => id !== user.id) }))} />{user.name}
-              </label>
-            ))}</div>
+            <legend className="text-sm font-semibold">Seçili profil</legend>
+            <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800">
+              {selectedTaskUser?.name ?? "Profil seçin"}
+            </div>
           </fieldset>
           <div className="flex gap-3">
             <button
               onClick={() => onSaveTask(taskDraft)}
-              disabled={working || !taskDraft.title.trim() || !taskDraft.assignedTo.length}
+              disabled={working || !selectedTaskUser || !taskDraft.title.trim() || !taskDraft.assignedTo.length}
               className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
             >
               {taskDraft.id ? "Güncelle" : "Görev ekle"}
             </button>
             <button
               onClick={() => {
-                setTaskDraft(createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id));
+                setTaskDraft(createTaskDraft(taskUserView || taskUsers[0]?.id));
                 setSpecialDate("");
               }}
               className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800"
@@ -928,7 +886,7 @@ export function ParentPanel(props: ParentPanelProps) {
         description={
           selectedTaskUser
             ? `${selectedTaskUser.name} için görevleri ara, filtrele ve düzenle.`
-            : "Görevleri bulun, düzenleyin veya silin."
+            : "Önce profil seçin."
         }
       >
         <div className="space-y-4">
@@ -967,62 +925,13 @@ export function ParentPanel(props: ParentPanelProps) {
           <details className="task-allowance-summary"><summary>Harçlık özeti</summary>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
-                {selectedTaskUser ? (
-                  <>
-                    <span className="font-semibold text-slate-950">
-                      {selectedTaskUser.name} için {formatAllowance(visibleTaskPoints)} görünür
-                    </span>
-                    <span>{formatAllowance(selectedTaskUserPotential?.points ?? 0)} bugün kazanabilir</span>
-                    <span>{selectedTaskUserPotential?.taskCount ?? 0} görev bugün planlı</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-semibold text-slate-950">{formatAllowance(visibleTaskPoints)} görünür</span>
-                    <span>{formatAllowance(todaysFamilyPotential)} bugün dağıtılabilir</span>
-                    <span>{todaysPotentialByUser.length || 0} profil bugün görev alıyor</span>
-                  </>
-                )}
+                <span className="font-semibold text-slate-950">
+                  {selectedTaskUser?.name ?? "Profil"} için {formatAllowance(visibleTaskPoints)} görünür
+                </span>
+                <span>{formatAllowance(selectedTaskUserPotential?.points ?? 0)} bugün kazanabilir</span>
+                <span>{selectedTaskUserPotential?.taskCount ?? 0} görev bugün planlı</span>
               </div>
-              {taskUserView === "tum" ? (
-                <button
-                  onClick={() => setShowTaskPotentialDetails((current) => !current)}
-                  className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700"
-                >
-                  {showTaskPotentialDetails ? "Kişi bazlı özeti gizle" : "Kişi bazlı özeti aç"}
-                </button>
-              ) : null}
             </div>
-
-            {taskUserView === "tum" && showTaskPotentialDetails ? (
-              todaysPotentialByUser.length === 0 ? (
-                <div className="mt-3 rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-[color:var(--text-muted)]">
-                  Bugün için planlanmış görev görünmüyor.
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {todaysPotentialByUser.map((item) => (
-                    <div
-                      key={item.user.id}
-                      className="flex min-w-[180px] flex-1 items-center gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-3 py-3"
-                    >
-                      <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] text-xl"
-                        style={{ backgroundColor: `${item.user.color}20` }}
-                      >
-                        <AvatarDisplay avatar={item.user.avatar} name={item.user.name} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-slate-950">{item.user.name}</div>
-                        <div className="text-xs text-[color:var(--text-muted)]">{item.taskCount} görev</div>
-                      </div>
-                      <div className="ml-auto rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-                        {formatAllowance(item.points)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            ) : null}
           </details>
 
           <div className="parent-task-table-wrap">
@@ -1038,16 +947,12 @@ export function ParentPanel(props: ParentPanelProps) {
                     {TASK_TABLE_TIME_BLOCKS.map((block) => (
                       <th key={block.id}>{block.label}</th>
                     ))}
-                    <th>Kişiler</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTaskGroups.map((group) => (
                     <tr key={group.key}>
                       <td className="parent-task-title-cell">
-                        <span className="parent-task-icon" aria-hidden="true">
-                          {group.icon}
-                        </span>
                         <span>
                           <strong>{group.title}</strong>
                           <small>{group.entries.length} zaman planı</small>
@@ -1103,13 +1008,21 @@ export function ParentPanel(props: ParentPanelProps) {
                                             </button>
                                           </>
                                         ) : null}
-                                        <button type="button" disabled={working} onClick={() => loadTaskIntoDraft(task)}>
-                                          Düzenle
+                                        <button
+                                          type="button"
+                                          disabled={working}
+                                          onClick={() => loadTaskIntoDraft(task)}
+                                          aria-label="Görevi düzenle"
+                                          title="Düzenle"
+                                        >
+                                          <Pencil className="h-3.5 w-3.5" />
                                         </button>
                                         <button
                                           type="button"
                                           className="is-delete"
                                           disabled={working}
+                                          aria-label="Görevi sil"
+                                          title="Sil"
                                           onClick={async () => {
                                             const names = task.assigned_to
                                               .map((id) => userLookup[id]?.name)
@@ -1130,13 +1043,13 @@ export function ParentPanel(props: ParentPanelProps) {
                                             if (await onDeleteTask(task.id)) {
                                               if (taskDraft.id === task.id) {
                                                 setTaskDraft(
-                                                  createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id)
+                                                  createTaskDraft(taskUserView || taskUsers[0]?.id)
                                                 );
                                               }
                                             }
                                           }}
                                         >
-                                          Sil
+                                          <X className="h-3.5 w-3.5" />
                                         </button>
                                       </div>
                                     </div>
@@ -1147,9 +1060,6 @@ export function ParentPanel(props: ParentPanelProps) {
                           </td>
                         );
                       })}
-                      <td className="parent-task-assigned-cell">
-                        {taskUserView === "tum" ? group.assignedSummary : selectedTaskUser?.name}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
