@@ -149,6 +149,10 @@ const TASK_LIST_TIME_FILTERS: Array<{ id: TaskListTimeFilter; label: string }> =
   { id: "her_zaman", label: TIME_BLOCK_LABELS.her_zaman }
 ];
 
+const TASK_TABLE_TIME_BLOCKS = TASK_LIST_TIME_FILTERS.filter(
+  (filter): filter is { id: TimeBlock; label: string } => filter.id !== "tum"
+);
+
 const TASK_TIME_BLOCK_ORDER: Record<TimeBlock, number> = {
   sabah: 0,
   ogleden_sonra: 1,
@@ -1021,136 +1025,135 @@ export function ParentPanel(props: ParentPanelProps) {
             ) : null}
           </details>
 
-          <div className="space-y-3">
+          <div className="parent-task-table-wrap">
             {filteredTaskGroups.length === 0 ? (
               <div className="rounded-[1.6rem] border border-dashed border-slate-200 bg-white/70 p-5 text-sm text-[color:var(--text-muted)]">
                 Bu filtreyle görünen görev yok.
               </div>
             ) : (
-              filteredTaskGroups.map((group) => (
-                <div key={group.key} className="rounded-[1.6rem] border border-slate-200 bg-white/80 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] bg-slate-100 text-2xl">
-                        {group.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-lg font-semibold">{group.title}</div>
-                        <div className="text-sm text-[color:var(--text-muted)]">
-                          {group.entries.length} zaman planı
-                          {taskUserView === "tum" ? ` • ${group.assignedSummary}` : ""}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {group.entries.map((task) => {
-                      const active = taskDraft.id === task.id;
-                      const moveScopeIds = getTaskMoveScopeIds(task);
-                      const moveIndex = moveScopeIds.indexOf(task.id);
-                      return (
-                        <div
-                          key={task.id}
-                          className={`w-full rounded-[1.2rem] border px-3 py-3 text-left transition ${
-                            active
-                              ? "border-slate-900 bg-slate-950 text-white"
-                              : "border-slate-200 bg-white/90 text-slate-900"
-                          }`}
-                        >
-                          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                  active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-700"
-                                }`}
-                              >
-                                {TIME_BLOCK_LABELS[task.time_block]}
-                              </span>
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                  active
-                                    ? "bg-amber-300/20 text-amber-100"
-                                    : "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
-                                }`}
-                              >
-                                {formatAllowance(task.points)}
-                              </span>
-                              <span
-                                className={`text-sm ${
-                                  active ? "text-white/80" : "text-[color:var(--text-muted)]"
-                                }`}
-                              >
-                                {getTaskScheduleSummary(task)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {taskUserView === "tum" ? (
-                                <div
-                                  className={`text-sm ${
-                                    active ? "text-white/80" : "text-[color:var(--text-muted)]"
-                                  }`}
-                                >
-                                  {task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean).join(", ")}
-                                </div>
-                              ) : null}
-
-                              {canReorderTasks ? (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      void moveTask(task, -1);
-                                    }}
-                                    disabled={working || moveScopeIds.length < 2 || moveIndex === 0}
-                                    className={`rounded-full p-2 ${
-                                      active
-                                        ? "bg-white/12 text-white"
-                                        : "bg-slate-100 text-slate-700"
-                                    } disabled:opacity-40`}
-                                    aria-label="Yukari tasi"
-                                  >
-                                    <ArrowUp className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      void moveTask(task, 1);
-                                    }}
-                                    disabled={
-                                      working || moveScopeIds.length < 2 || moveIndex === moveScopeIds.length - 1
-                                    }
-                                    className={`rounded-full p-2 ${
-                                      active
-                                        ? "bg-white/12 text-white"
-                                        : "bg-slate-100 text-slate-700"
-                                    } disabled:opacity-40`}
-                                    aria-label="Asagi tasi"
-                                  >
-                                    <ArrowDown className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
-                          <div className="parent-task-actions">
-                            <button disabled={working} onClick={() => loadTaskIntoDraft(task)}>Düzenle</button>
-                            <button className="is-delete" disabled={working} onClick={async () => {
-                              const names = task.assigned_to.map((id) => userLookup[id]?.name).filter(Boolean).join(", ");
-                              if (!window.confirm(task.title + " (" + TIME_BLOCK_LABELS[task.time_block] + ") silinsin mi? Bu görev " + names + " için kaldırılır. Tamamlama kayıtları silinir; kazanılmış harçlık korunur.")) return;
-                              if (await onDeleteTask(task.id)) {
-                                if (taskDraft.id === task.id) setTaskDraft(createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id));
-                              }
-                            }}>Sil</button>
-                          </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
+              <table className="parent-task-table">
+                <thead>
+                  <tr>
+                    <th>Görev</th>
+                    {TASK_TABLE_TIME_BLOCKS.map((block) => (
+                      <th key={block.id}>{block.label}</th>
+                    ))}
+                    <th>Kişiler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTaskGroups.map((group) => (
+                    <tr key={group.key}>
+                      <td className="parent-task-title-cell">
+                        <span className="parent-task-icon" aria-hidden="true">
+                          {group.icon}
+                        </span>
+                        <span>
+                          <strong>{group.title}</strong>
+                          <small>{group.entries.length} zaman planı</small>
+                        </span>
+                      </td>
+                      {TASK_TABLE_TIME_BLOCKS.map((block) => {
+                        const blockTasks = group.entries.filter((task) => task.time_block === block.id);
+                        return (
+                          <td key={block.id}>
+                            {blockTasks.length === 0 ? (
+                              <span className="parent-task-empty">-</span>
+                            ) : (
+                              <div className="parent-task-plan-stack">
+                                {blockTasks.map((task) => {
+                                  const active = taskDraft.id === task.id;
+                                  const moveScopeIds = getTaskMoveScopeIds(task);
+                                  const moveIndex = moveScopeIds.indexOf(task.id);
+                                  return (
+                                    <div
+                                      key={task.id}
+                                      className={`parent-task-plan ${active ? "is-active" : ""}`}
+                                    >
+                                      <button
+                                        type="button"
+                                        className="parent-task-plan-main"
+                                        onClick={() => loadTaskIntoDraft(task)}
+                                      >
+                                        <span className="parent-task-plan-points">{formatAllowance(task.points)}</span>
+                                        <span>{getTaskScheduleSummary(task)}</span>
+                                      </button>
+                                      <div className="parent-task-plan-tools">
+                                        {canReorderTasks ? (
+                                          <>
+                                            <button
+                                              type="button"
+                                              onClick={() => void moveTask(task, -1)}
+                                              disabled={working || moveScopeIds.length < 2 || moveIndex === 0}
+                                              aria-label="Yukari tasi"
+                                            >
+                                              <ArrowUp className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => void moveTask(task, 1)}
+                                              disabled={
+                                                working ||
+                                                moveScopeIds.length < 2 ||
+                                                moveIndex === moveScopeIds.length - 1
+                                              }
+                                              aria-label="Asagi tasi"
+                                            >
+                                              <ArrowDown className="h-3.5 w-3.5" />
+                                            </button>
+                                          </>
+                                        ) : null}
+                                        <button type="button" disabled={working} onClick={() => loadTaskIntoDraft(task)}>
+                                          Düzenle
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="is-delete"
+                                          disabled={working}
+                                          onClick={async () => {
+                                            const names = task.assigned_to
+                                              .map((id) => userLookup[id]?.name)
+                                              .filter(Boolean)
+                                              .join(", ");
+                                            if (
+                                              !window.confirm(
+                                                task.title +
+                                                  " (" +
+                                                  TIME_BLOCK_LABELS[task.time_block] +
+                                                  ") silinsin mi? Bu görev " +
+                                                  names +
+                                                  " için kaldırılır. Tamamlama kayıtları silinir; kazanılmış harçlık korunur."
+                                              )
+                                            ) {
+                                              return;
+                                            }
+                                            if (await onDeleteTask(task.id)) {
+                                              if (taskDraft.id === task.id) {
+                                                setTaskDraft(
+                                                  createTaskDraft(taskUserView !== "tum" ? taskUserView : taskUsers[0]?.id)
+                                                );
+                                              }
+                                            }
+                                          }}
+                                        >
+                                          Sil
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="parent-task-assigned-cell">
+                        {taskUserView === "tum" ? group.assignedSummary : selectedTaskUser?.name}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>

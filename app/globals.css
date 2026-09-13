@@ -4623,4 +4623,25 @@ button {
 .parent-task-actions .is-delete { color: #a42d2d; background: #fff0ed; }
 .task-allowance-summary { font-size: 13px; color: #536052; }
 .task-allowance-summary summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.parent-task-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; background: rgba(255, 255, 255, 0.75); }
+.parent-task-table { width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px; }
+.parent-task-table th { padding: 10px 12px; background: #f7f8f4; color: #536052; text-align: left; font-weight: 800; }
+.parent-task-table td { padding: 10px 12px; border-top: 1px solid #e2e8f0; vertical-align: top; }
+.parent-task-title-cell { width: 210px; color: #151712; }
+.parent-task-title-cell > span:last-child { display: grid; gap: 2px; }
+.parent-task-title-cell strong { font-size: 14px; line-height: 1.25; }
+.parent-task-title-cell small { color: #64748b; font-size: 12px; }
+.parent-task-icon { display: inline-grid; width: 28px; height: 28px; margin-right: 8px; place-items: center; border-radius: 8px; background: #f1f5f9; font-size: 16px; vertical-align: top; }
+.parent-task-empty { color: #94a3b8; }
+.parent-task-plan-stack { display: grid; gap: 8px; }
+.parent-task-plan { display: grid; gap: 6px; min-width: 150px; padding: 8px; border: 1px solid #e2e8f0; background: #fff; }
+.parent-task-plan.is-active { border-color: #151712; background: #151712; color: #fff; }
+.parent-task-plan-main { display: flex; align-items: center; gap: 7px; text-align: left; font-weight: 700; }
+.parent-task-plan-points { display: inline-flex; min-width: 42px; justify-content: center; padding: 3px 6px; border: 1px solid #fde68a; background: #fffbeb; color: #92400e; font-weight: 800; }
+.parent-task-plan.is-active .parent-task-plan-points { border-color: rgba(252, 211, 77, 0.45); background: rgba(252, 211, 77, 0.18); color: #fde68a; }
+.parent-task-plan-tools { display: flex; flex-wrap: wrap; gap: 4px; }
+.parent-task-plan-tools button { display: inline-flex; min-height: 28px; align-items: center; justify-content: center; padding: 5px 8px; background: #edf0e8; color: #25351f; font-size: 12px; font-weight: 800; }
+.parent-task-plan-tools button:disabled { opacity: 0.4; }
+.parent-task-plan-tools .is-delete { background: #fff0ed; color: #a42d2d; }
+.parent-task-assigned-cell { width: 130px; color: #475569; font-weight: 700; }
 @media (max-width: 1200px) { .parent-tasks-layout { grid-template-columns: minmax(0, 1fr); } }
