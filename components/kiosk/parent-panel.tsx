@@ -190,11 +190,9 @@ export function ParentPanel(props: ParentPanelProps) {
     onDeleteTask,
     onReorderTasks,
     onAdjustPoints,
-    onResetProgress,
     onUpdateSettings,
     onChangeAccountPassword,
     onChangeParentPin,
-    onLogout
   } = props;
 
   const [tab, setTab] = useState<TabId>("kullanicilar");
@@ -1222,24 +1220,6 @@ export function ParentPanel(props: ParentPanelProps) {
             >
               Ayarları kaydet
             </button>
-            <button
-              onClick={async () => {
-                if (!window.confirm("Tüm harçlıklar, tamamlanan görevler ve test geçmişi sıfırlansın mı?")) {
-                  return;
-                }
-                await onResetProgress();
-              }}
-              disabled={working}
-              className="rounded-[1.4rem] bg-amber-100 px-5 py-3 font-semibold text-amber-800 disabled:opacity-60"
-            >
-              Testi sıfırla
-            </button>
-            <button
-              onClick={onLogout}
-              className="rounded-[1.4rem] bg-rose-100 px-5 py-3 font-semibold text-rose-700"
-            >
-              Ebeveyn kilidini kapat
-            </button>
           </div>
         </div>
       </Card>
@@ -1343,15 +1323,6 @@ export function ParentPanel(props: ParentPanelProps) {
                 PIN&apos;i güncelle
               </button>
             </div>
-          </div>
-        </Card>
-
-        <Card title="Tablet notları" description="Kiosk kullanımına yönelik kısa hatırlatmalar.">
-          <div className="space-y-3 text-[color:var(--text-muted)]">
-            <div className="rounded-[1.5rem] bg-white/80 p-4">Uygulamayı ana ekrana ekleyip tam ekran açın.</div>
-            <div className="rounded-[1.5rem] bg-white/80 p-4">Yönetim paneli PIN ile korunur.</div>
-            <div className="rounded-[1.5rem] bg-white/80 p-4">Testi sıfırla butonu harçlıkları ve tamamlananları temizler, kullanıcıları silmez.</div>
-            <div className="rounded-[1.5rem] bg-white/80 p-4">Görevler günlük, haftalık ve özel gün olarak planlanabilir.</div>
           </div>
         </Card>
       </div>
