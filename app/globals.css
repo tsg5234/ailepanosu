@@ -4615,7 +4615,7 @@ button {
   }
 }
 
-.parent-tasks-layout { display: grid; grid-template-columns: minmax(300px, .7fr) minmax(0, 1.3fr); gap: 20px; align-items: start; }
+.parent-tasks-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
 .parent-tasks-layout .parent-management-heading { flex-direction: column; gap: 8px; }
 .parent-tasks-layout .parent-management-heading p { text-align: left; }
 .task-allowance-summary { font-size: 13px; color: #536052; }
@@ -4643,4 +4643,3 @@ button {
 .parent-task-plan-tools button { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; background: #edf0e8; color: #25351f; font-size: 12px; font-weight: 800; }
 .parent-task-plan-tools button:disabled { opacity: 0.4; }
 .parent-task-plan-tools .is-delete { background: #fff0ed; color: #a42d2d; }
-@media (max-width: 1200px) { .parent-tasks-layout { grid-template-columns: minmax(0, 1fr); } }
