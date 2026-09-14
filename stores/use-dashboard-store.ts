@@ -28,6 +28,7 @@ interface DashboardStore {
   data: DashboardPayload | null;
   activeProfileId: string | null;
   pendingTaskKeys: string[];
+  pendingTaskMutations: PendingTaskMutation[];
   loading: boolean;
   working: boolean;
   error: string | null;
@@ -78,6 +79,24 @@ interface DashboardStore {
   changeAccountPassword: (payload: AccountPasswordChangePayload) => Promise<void>;
   changeParentPin: (payload: ParentPinChangePayload) => Promise<void>;
 }
+
+type PendingTaskMutation =
+  | {
+      kind: "complete";
+      key: string;
+      taskId: string;
+      userId: string;
+      dateKey: string;
+      taskTitle: string;
+      points: number;
+    }
+  | {
+      kind: "undo";
+      key: string;
+      taskId: string;
+      userId: string;
+      dateKey: string;
+    };
 
 function normalizeHeaders(headers?: HeadersInit) {
   const normalized: Record<string, string> = {
@@ -177,6 +196,17 @@ function withDashboardState(
       activeProfileId: existingActive
     };
   });
+}
+
+function getDashboardStatePatch(state: DashboardStore, data: DashboardPayload) {
+  const existingActive = data.users.some((user) => user.id === state.activeProfileId)
+    ? state.activeProfileId
+    : pickDefaultProfile(data);
+
+  return {
+    data,
+    activeProfileId: existingActive
+  };
 }
 
 function getTaskActionKey(taskId: string, userId: string, dateKey: string) {
@@ -298,10 +328,30 @@ function undoTaskOptimistically(
   };
 }
 
+function applyPendingTaskMutations(data: DashboardPayload, mutations: PendingTaskMutation[]) {
+  return mutations.reduce<DashboardPayload>((currentData, mutation) => {
+    if (mutation.kind === "complete") {
+      return (
+        completeTaskOptimistically(
+          currentData,
+          mutation.taskId,
+          mutation.userId,
+          mutation.dateKey,
+          mutation.taskTitle,
+          mutation.points
+        ) ?? currentData
+      );
+    }
+
+    return undoTaskOptimistically(currentData, mutation.taskId, mutation.userId, mutation.dateKey).data ?? currentData;
+  }, data);
+}
+
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   data: null,
   activeProfileId: null,
   pendingTaskKeys: [],
+  pendingTaskMutations: [],
   loading: true,
   working: false,
   error: null,
@@ -421,6 +471,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         adminOpen: false,
         loginOpen: false,
         pendingTaskKeys: [],
+        pendingTaskMutations: [],
         celebration: null,
         toast: { kind: "bilgi", message: "Hesaptan cikis yapildi." }
       });
@@ -496,11 +547,22 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       return;
     }
 
+    const mutation: PendingTaskMutation = {
+      kind: "complete",
+      key: taskKey,
+      taskId,
+      userId,
+      dateKey,
+      taskTitle,
+      points
+    };
+
     set((state) => ({
       data: completeTaskOptimistically(state.data, taskId, userId, dateKey, taskTitle, points),
       working: false,
       error: null,
       pendingTaskKeys: [...state.pendingTaskKeys, taskKey],
+      pendingTaskMutations: [...state.pendingTaskMutations, mutation],
       celebration: {
         userId,
         taskTitle,
@@ -515,16 +577,31 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         body: JSON.stringify({ userId, dateKey })
       });
 
-      withDashboardState(set, data);
       set((state) => ({
+        ...getDashboardStatePatch(
+          state,
+          applyPendingTaskMutations(
+            data,
+            state.pendingTaskMutations.filter((item) => item.key !== taskKey)
+          )
+        ),
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
+        pendingTaskMutations: state.pendingTaskMutations.filter((item) => item.key !== taskKey),
         toast: { kind: "basari", message: "Aferin! Görev işlendi." }
       }));
     } catch (error) {
       try {
         const data = await requestJson<DashboardPayload>("/api/dashboard");
-        withDashboardState(set, data);
+        set((state) => ({
+          ...getDashboardStatePatch(
+            state,
+            applyPendingTaskMutations(
+              data,
+              state.pendingTaskMutations.filter((item) => item.key !== taskKey)
+            )
+          )
+        }));
       } catch {
         // Keep the optimistic screen if the recovery fetch also fails; the error toast explains the failed save.
       }
@@ -532,6 +609,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       set((state) => ({
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
+        pendingTaskMutations: state.pendingTaskMutations.filter((item) => item.key !== taskKey),
         toast: {
           kind: "hata",
           message: error instanceof Error ? error.message : "Görev güncellenemedi."
@@ -546,11 +624,20 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       return;
     }
 
+    const mutation: PendingTaskMutation = {
+      kind: "undo",
+      key: taskKey,
+      taskId,
+      userId,
+      dateKey
+    };
+
     set((state) => ({
       data: undoTaskOptimistically(state.data, taskId, userId, dateKey).data,
       working: false,
       error: null,
-      pendingTaskKeys: [...state.pendingTaskKeys, taskKey]
+      pendingTaskKeys: [...state.pendingTaskKeys, taskKey],
+      pendingTaskMutations: [...state.pendingTaskMutations, mutation]
     }));
 
     try {
@@ -559,16 +646,31 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         body: JSON.stringify({ userId, dateKey })
       });
 
-      withDashboardState(set, data);
       set((state) => ({
+        ...getDashboardStatePatch(
+          state,
+          applyPendingTaskMutations(
+            data,
+            state.pendingTaskMutations.filter((item) => item.key !== taskKey)
+          )
+        ),
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
+        pendingTaskMutations: state.pendingTaskMutations.filter((item) => item.key !== taskKey),
         toast: { kind: "bilgi", message: `${taskTitle} geri alindi.` }
       }));
     } catch (error) {
       try {
         const data = await requestJson<DashboardPayload>("/api/dashboard");
-        withDashboardState(set, data);
+        set((state) => ({
+          ...getDashboardStatePatch(
+            state,
+            applyPendingTaskMutations(
+              data,
+              state.pendingTaskMutations.filter((item) => item.key !== taskKey)
+            )
+          )
+        }));
       } catch {
         // Keep the optimistic screen if the recovery fetch also fails; the error toast explains the failed save.
       }
@@ -576,6 +678,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       set((state) => ({
         working: false,
         pendingTaskKeys: state.pendingTaskKeys.filter((key) => key !== taskKey),
+        pendingTaskMutations: state.pendingTaskMutations.filter((item) => item.key !== taskKey),
         toast: {
           kind: "hata",
           message: error instanceof Error ? error.message : "Görev geri alınamadı."
