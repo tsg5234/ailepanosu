@@ -692,8 +692,11 @@ export async function getDashboardSnapshot(
   }
 
   const supabase = createAdminClient();
-  const week = getWeekDays(new Date(), family);
-  const firstWeekDay = week[0]?.dateKey ?? getDateKey(new Date(), family);
+  const today = new Date();
+  const week = getWeekDays(today, family);
+  const historyStartDate = new Date(today);
+  historyStartDate.setDate(today.getDate() - 13);
+  const firstHistoryDay = getDateKey(historyStartDate, family);
 
   const [
     usersResult,
@@ -709,7 +712,7 @@ export async function getDashboardSnapshot(
       .from("completions")
       .select("*")
       .eq("family_id", family.id)
-      .gte("completion_date", firstWeekDay)
+      .gte("completion_date", firstHistoryDay)
       .order("completion_date", { ascending: false }),
     supabase.from("rewards").select("*").eq("family_id", family.id).order("points_required"),
     supabase
@@ -764,10 +767,10 @@ export async function getDashboardSnapshot(
     redemptions: redemptionsResult.data ?? [],
     pointEvents: eventsResult.data ?? [],
     today: {
-      dateKey: getDateKey(new Date(), family),
-      label: getTurkishDateLabel(new Date(), family),
-      weekday: getTurkishWeekdayLabel(new Date(), family),
-      activeTimeBlock: getActiveTimeBlock(new Date(), family)
+      dateKey: getDateKey(today, family),
+      label: getTurkishDateLabel(today, family),
+      weekday: getTurkishWeekdayLabel(today, family),
+      activeTimeBlock: getActiveTimeBlock(today, family)
     },
     week
   };

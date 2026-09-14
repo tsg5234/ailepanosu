@@ -2,12 +2,12 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, History, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { formatAllowance } from "@/lib/allowance";
 import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
-import { isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
+import { getDateKey, isTaskCompleted, isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type {
   AccountPasswordChangePayload,
@@ -20,7 +20,7 @@ import type {
   UserFormPayload
 } from "@/lib/types";
 
-type TabId = "kullanicilar" | "gorevler" | "harcliklar" | "ayarlar";
+type TabId = "kullanicilar" | "gorevler" | "harcliklar" | "gecmis" | "ayarlar";
 
 interface ParentPanelProps {
   open: boolean;
@@ -52,6 +52,7 @@ const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ classN
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
   { id: "harcliklar", label: "Hesap", icon: Wallet },
+  { id: "gecmis", label: "Geçmiş", icon: History },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
 ];
 
@@ -177,6 +178,43 @@ function getTaskScheduleSummary(task: TaskRecord) {
   return task.special_dates.join(", ");
 }
 
+function dateKeyToLocalDate(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`);
+}
+
+function getRecentHistoryDays(todayDateKey: string, count = 14) {
+  const today = dateKeyToLocalDate(todayDateKey);
+
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - index);
+    const dateKey = getDateKey(date);
+    const weekday = new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(date);
+    const label = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" }).format(date);
+
+    return {
+      date,
+      dateKey,
+      label: index === 0 ? "Bugün" : index === 1 ? "Dün" : label,
+      detail: `${weekday} ${label}`
+    };
+  });
+}
+
+function getCompletionForTask(
+  completions: DashboardPayload["completions"],
+  taskId: string,
+  userId: string,
+  dateKey: string
+) {
+  return completions.find(
+    (completion) =>
+      completion.task_id === taskId &&
+      completion.user_id === userId &&
+      completion.completion_date === dateKey
+  );
+}
+
 export function ParentPanel(props: ParentPanelProps) {
   const {
     open,
@@ -191,6 +229,7 @@ export function ParentPanel(props: ParentPanelProps) {
     onDeleteTask,
     onReorderTasks,
     onAdjustPoints,
+    onUndoTaskCompletion,
     onUpdateSettings,
     onChangeAccountPassword,
     onChangeParentPin,
@@ -208,6 +247,8 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [taskUserView, setTaskUserView] = useState<string>("");
+  const [historyUserId, setHistoryUserId] = useState<string>("");
+  const [historyDateKey, setHistoryDateKey] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -222,17 +263,21 @@ export function ParentPanel(props: ParentPanelProps) {
     setFamilyName(data.family.name);
     setAudioEnabled(data.family.audio_enabled);
     setPointsUserId((current) => current || data.users[0]?.id || "");
+    setHistoryUserId((current) => current || data.users[0]?.id || "");
+    setHistoryDateKey((current) => current || data.today.dateKey);
   }, [data]);
 
   useEffect(() => {
     if (!data?.users.length) {
       setTaskUserView("");
+      setHistoryUserId("");
       return;
     }
 
     const validUserIds = new Set(data.users.map((user) => user.id));
 
     setTaskUserView((current) => (validUserIds.has(current) ? current : data.users[0].id));
+    setHistoryUserId((current) => (validUserIds.has(current) ? current : data.users[0].id));
     setTaskDraft((current) => {
       const currentOwnerId = current.assignedTo[0];
       if (currentOwnerId && validUserIds.has(currentOwnerId)) {
@@ -386,6 +431,50 @@ export function ParentPanel(props: ParentPanelProps) {
   const parsedPointsDelta =
     pointsDeltaInput.trim() !== "" && pointsDeltaInput !== "-" ? Number(pointsDeltaInput) : null;
   const canSubmitPoints = parsedPointsDelta !== null && Number.isFinite(parsedPointsDelta);
+
+  const historyDays = useMemo(
+    () => getRecentHistoryDays(data?.today.dateKey ?? getDateKey()),
+    [data?.today.dateKey]
+  );
+  const selectedHistoryUser = historyUserId ? userLookup[historyUserId] : undefined;
+  const selectedHistoryDay = historyDays.find((day) => day.dateKey === historyDateKey) ?? historyDays[0];
+  const historyTasks = useMemo(() => {
+    if (!data?.family || !selectedHistoryUser || !selectedHistoryDay) {
+      return [];
+    }
+
+    return [...data.tasks]
+      .filter((task) =>
+        task.assigned_to.includes(selectedHistoryUser.id) &&
+        isTaskScheduledForDate(task, selectedHistoryDay.dateKey, selectedHistoryDay.date, data.family)
+      )
+      .sort((left, right) => {
+        const timeOrder = TASK_TIME_BLOCK_ORDER[left.time_block] - TASK_TIME_BLOCK_ORDER[right.time_block];
+        if (timeOrder !== 0) {
+          return timeOrder;
+        }
+
+        return Date.parse(left.created_at) - Date.parse(right.created_at);
+      });
+  }, [data?.family, data?.tasks, selectedHistoryDay, selectedHistoryUser]);
+  const completedHistoryTasks = useMemo(
+    () =>
+      historyTasks.filter((task) =>
+        isTaskCompleted(data?.completions ?? [], task.id, selectedHistoryUser?.id ?? "", selectedHistoryDay?.dateKey ?? "")
+      ),
+    [data?.completions, historyTasks, selectedHistoryDay?.dateKey, selectedHistoryUser?.id]
+  );
+  const historyPotentialPoints = historyTasks.reduce((total, task) => total + task.points, 0);
+  const historyEarnedPoints = completedHistoryTasks.reduce((total, task) => {
+    const completion = getCompletionForTask(
+      data?.completions ?? [],
+      task.id,
+      selectedHistoryUser?.id ?? "",
+      selectedHistoryDay?.dateKey ?? ""
+    );
+
+    return total + (completion?.points_earned ?? task.points);
+  }, 0);
 
   const loadTaskIntoDraft = (task: TaskRecord) => {
     setTaskDraft({
@@ -1143,6 +1232,154 @@ export function ParentPanel(props: ParentPanelProps) {
     </div>
   );
 
+  const historyTab = (
+    <div className="space-y-5">
+      <div className="parent-management-toolbar">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-950">Geçmiş kontrolü</div>
+            <div className="text-sm text-[color:var(--text-muted)]">
+              Bir profil ve gün seçin; yapılan ve kalan görevleri tek ekranda görün.
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {data?.users.map((user) => {
+              const active = historyUserId === user.id;
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => setHistoryUserId(user.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-base">
+                      <AvatarDisplay avatar={user.avatar} name={user.name} />
+                    </span>
+                    <span>{user.name}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Card
+        title="Gün özeti"
+        description={
+          selectedHistoryUser && selectedHistoryDay
+            ? `${selectedHistoryUser.name} / ${selectedHistoryDay.detail}`
+            : "Profil ve gün seçin."
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex gap-2 overflow-x-auto pb-1 soft-scrollbar">
+            {historyDays.map((day) => {
+              const active = selectedHistoryDay?.dateKey === day.dateKey;
+              return (
+                <button
+                  key={day.dateKey}
+                  type="button"
+                  onClick={() => setHistoryDateKey(day.dateKey)}
+                  className={`shrink-0 rounded-2xl px-4 py-3 text-left text-sm font-semibold ${
+                    active ? "bg-slate-950 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200"
+                  }`}
+                >
+                  <span className="block">{day.label}</span>
+                  <span className={`block text-xs ${active ? "text-white/70" : "text-slate-500"}`}>{day.detail}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Görev</div>
+              <div className="mt-2 text-2xl font-bold text-slate-950">
+                {completedHistoryTasks.length}/{historyTasks.length}
+              </div>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Kazanç</div>
+              <div className="mt-2 text-2xl font-bold text-emerald-700">{formatAllowance(historyEarnedPoints)}</div>
+            </div>
+            <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Planlanan</div>
+              <div className="mt-2 text-2xl font-bold text-slate-950">{formatAllowance(historyPotentialPoints)}</div>
+            </div>
+          </div>
+
+          {historyTasks.length === 0 ? (
+            <div className="rounded-[1.6rem] border border-dashed border-slate-200 bg-white/70 p-5 text-sm text-[color:var(--text-muted)]">
+              Bu gün için planlı görev görünmüyor.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white">
+              <div className="grid grid-cols-[1fr_130px_120px] bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                <span>Görev</span>
+                <span>Zaman</span>
+                <span>Durum</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {historyTasks.map((task) => {
+                  const completion = getCompletionForTask(
+                    data?.completions ?? [],
+                    task.id,
+                    selectedHistoryUser?.id ?? "",
+                    selectedHistoryDay?.dateKey ?? ""
+                  );
+                  const completed = Boolean(completion);
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="grid grid-cols-[1fr_130px_120px] items-center gap-3 px-4 py-3 text-sm"
+                    >
+                      <div>
+                        <div className="font-semibold text-slate-950">{task.title}</div>
+                        <div className="text-xs text-[color:var(--text-muted)]">{formatAllowance(completion?.points_earned ?? task.points)}</div>
+                      </div>
+                      <div className="text-slate-600">{TIME_BLOCK_LABELS[task.time_block]}</div>
+                      <div>
+                        {completed ? (
+                          <button
+                            type="button"
+                            disabled={working || !selectedHistoryUser || !selectedHistoryDay}
+                            onClick={() =>
+                              selectedHistoryUser && selectedHistoryDay
+                                ? onUndoTaskCompletion(
+                                    task.id,
+                                    selectedHistoryUser.id,
+                                    selectedHistoryDay.dateKey,
+                                    task.title
+                                  )
+                                : undefined
+                            }
+                            className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 disabled:opacity-60"
+                            title="Yanlış işaretlendiyse geri al"
+                          >
+                            ✓ Yapıldı
+                          </button>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500">
+                            Bekliyor
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+
   const settingsTab = (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
       <Card title="Aile ayarları" description="Aile adı ve sesli geri bildirimi yönetin.">
@@ -1290,7 +1527,9 @@ export function ParentPanel(props: ParentPanelProps) {
       ? tasksTab
       : tab === "harcliklar"
         ? pointsTab
-        : settingsTab;
+        : tab === "gecmis"
+          ? historyTab
+          : settingsTab;
 
   const body = !data?.session.parentAuthenticated
     ? lockedView
