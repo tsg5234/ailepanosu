@@ -31,16 +31,22 @@ import { ParentPanel } from "@/components/kiosk/parent-panel";
 import { PinModal } from "@/components/kiosk/pin-modal";
 import { SetupScreen } from "@/components/kiosk/setup-screen";
 import {
+  getTodayPlanEntries,
+  PLAN_WEEKDAY_SHORT_LABELS
+} from "@/lib/profile-plan";
+import {
   getActiveTimeBlock,
   getDateKey,
   getDigitalTimeLabel,
   getTasksForUserOnDate,
+  getWeekdayKey,
   isTaskCompleted
 } from "@/lib/schedule";
 import type {
   ActiveTimeBlock,
   CompletionRecord,
   FamilyRecord,
+  ProfilePlanEntryRecord,
   SetupPayload,
   TaskRecord,
   TimeBlock,
@@ -299,10 +305,53 @@ function TodayOverview({
   );
 }
 
+function TodayPlanPreview({
+  user,
+  entries,
+  weekday
+}: {
+  user: UserRecord;
+  entries: ProfilePlanEntryRecord[];
+  weekday: string;
+}) {
+  const todayEntries = getTodayPlanEntries(entries, user.id, weekday);
+
+  return (
+    <section className="command-plan-preview">
+      <div className="command-section-heading">
+        <span>Plan</span>
+        <strong>Bugünün planı</strong>
+      </div>
+      {todayEntries.length === 0 ? (
+        <div className="command-profile-empty">{user.name} için bugün plan eklenmemiş.</div>
+      ) : (
+        <div className="command-plan-list">
+          {todayEntries.map((entry) => (
+            <article key={entry.id} className="command-plan-item">
+              <div>
+                <strong>{entry.title}</strong>
+                <span>{entry.slot_label}</span>
+              </div>
+              <time>
+                {entry.start_time} - {entry.end_time}
+              </time>
+            </article>
+          ))}
+        </div>
+      )}
+      <div className="command-plan-footer">
+        <span>{PLAN_WEEKDAY_SHORT_LABELS[weekday as keyof typeof PLAN_WEEKDAY_SHORT_LABELS] ?? "Bugün"}</span>
+      </div>
+    </section>
+  );
+}
+
 function ProfilesDirectory({
   stats,
   selectedUser,
   completions,
+  profilePlan,
+  weekday,
   dateKey,
   pendingTaskKeys,
   onSelect,
@@ -312,6 +361,8 @@ function ProfilesDirectory({
   stats: MemberStats[];
   selectedUser: UserRecord;
   completions: CompletionRecord[];
+  profilePlan: ProfilePlanEntryRecord[];
+  weekday: string;
   dateKey: string;
   pendingTaskKeys: string[];
   onSelect: (userId: string) => void;
@@ -440,6 +491,8 @@ function ProfilesDirectory({
             ))
           )}
         </div>
+
+        <TodayPlanPreview user={selectedStats.user} entries={profilePlan} weekday={weekday} />
       </article>
     </section>
   );
@@ -478,6 +531,7 @@ export function KioskApp({ mode }: KioskAppProps) {
     saveUser,
     deleteUser,
     saveTask,
+    saveProfilePlan,
     deleteTask,
     reorderTasks,
     adjustPoints,
@@ -544,6 +598,10 @@ export function KioskApp({ mode }: KioskAppProps) {
 
   const familyCurrentDayPart = useMemo(
     () => (data ? getActiveTimeBlock(referenceNow, data.family, "ebeveyn") : "sabah"),
+    [data, referenceNow]
+  );
+  const todayWeekdayKey = useMemo(
+    () => (data ? getWeekdayKey(referenceNow, data.family) : "pzt"),
     [data, referenceNow]
   );
 
@@ -696,6 +754,7 @@ export function KioskApp({ mode }: KioskAppProps) {
           onSaveUser={saveUser}
           onDeleteUser={deleteUser}
           onSaveTask={saveTask}
+          onSaveProfilePlan={saveProfilePlan}
           onDeleteTask={deleteTask}
           onReorderTasks={reorderTasks}
           onAdjustPoints={adjustPoints}
@@ -829,6 +888,8 @@ export function KioskApp({ mode }: KioskAppProps) {
               stats={memberStats}
               selectedUser={selectedUser}
               completions={data.completions}
+              profilePlan={data.profilePlan}
+              weekday={todayWeekdayKey}
               dateKey={todayDateKey}
               pendingTaskKeys={pendingTaskKeys}
               onSelect={setActiveProfile}
@@ -856,6 +917,7 @@ export function KioskApp({ mode }: KioskAppProps) {
                 setDashboardView("profiles");
               }}
             />
+            <TodayPlanPreview user={selectedUser} entries={data.profilePlan} weekday={todayWeekdayKey} />
           </motion.div>
         )}
       </main>
@@ -896,6 +958,7 @@ export function KioskApp({ mode }: KioskAppProps) {
         onSaveUser={saveUser}
         onDeleteUser={deleteUser}
         onSaveTask={saveTask}
+        onSaveProfilePlan={saveProfilePlan}
           onDeleteTask={deleteTask}
         onReorderTasks={reorderTasks}
         onAdjustPoints={adjustPoints}

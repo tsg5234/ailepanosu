@@ -43,6 +43,23 @@ create table if not exists tasks (
 create index if not exists tasks_family_idx on tasks(family_id);
 create index if not exists tasks_assigned_to_idx on tasks using gin(assigned_to);
 
+create table if not exists profile_plan_entries (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references families(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
+  weekday text not null check (weekday in ('pzt', 'sal', 'car', 'per', 'cum', 'cts', 'paz')),
+  slot_index integer not null check (slot_index between 1 and 12),
+  slot_label text not null,
+  start_time text not null,
+  end_time text not null,
+  title text not null default '',
+  created_at timestamptz not null default now(),
+  unique(user_id, weekday, slot_index)
+);
+
+create index if not exists profile_plan_entries_family_idx
+  on profile_plan_entries(family_id, user_id, weekday, slot_index);
+
 create table if not exists completions (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references families(id) on delete cascade,

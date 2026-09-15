@@ -6,6 +6,7 @@ import type {
   AccountPasswordChangePayload,
   DashboardPayload,
   FamilySettingsPayload,
+  ProfilePlanSavePayload,
   ParentPinChangePayload,
   RewardFormPayload,
   TaskFormPayload,
@@ -67,6 +68,7 @@ interface DashboardStore {
   deleteUser: (userId: string) => Promise<void>;
   saveTask: (payload: TaskFormPayload) => Promise<void>;
   deleteTask: (taskId: string) => Promise<boolean>;
+  saveProfilePlan: (payload: ProfilePlanSavePayload) => Promise<void>;
   reorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   saveReward: (payload: RewardFormPayload) => Promise<void>;
   resolveRedemption: (
@@ -787,6 +789,29 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     } catch (error) {
       set({ working: false, toast: { kind: "hata", message: error instanceof Error ? error.message : "Görev silinemedi." } });
       return false;
+    }
+  },
+  async saveProfilePlan(payload) {
+    set({ working: true });
+
+    try {
+      const data = await requestJson<DashboardPayload>("/api/profile-plan", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      withDashboardState(set, data);
+      set({
+        working: false,
+        toast: { kind: "basari", message: "Plan kaydedildi." }
+      });
+    } catch (error) {
+      set({
+        working: false,
+        toast: {
+          kind: "hata",
+          message: error instanceof Error ? error.message : "Plan kaydedilemedi."
+        }
+      });
     }
   },
   async reorderTasks(orderedTaskIds) {

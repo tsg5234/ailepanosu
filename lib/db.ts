@@ -17,6 +17,7 @@ import {
   reorderLocalTasks,
   requestLocalReward,
   resetLocalProgress,
+  saveLocalProfilePlan,
   resolveLocalReward,
   saveLocalReward,
   saveLocalRewardSystemConfig,
@@ -47,6 +48,7 @@ import type {
   DashboardPayload,
   FamilySettingsPayload,
   FamilyRecord,
+  ProfilePlanSavePayload,
   ParentPinChangePayload,
   RewardSystemMode,
   RewardFormPayload,
@@ -101,6 +103,17 @@ function fail(message: string, error: unknown): never {
             .join(" | ")
         : "Bilinmeyen hata";
   throw new Error(`${message}: ${detail}`);
+}
+
+function isMissingTableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  const message = "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+
+  return code === "42P01" || code === "PGRST205" || message.includes("profile_plan_entries");
 }
 
 function normalizeUsername(username: string) {
@@ -207,6 +220,7 @@ function getEmptyDashboardSnapshot(session: AppSession | null): DashboardPayload
     session: getDashboardSession(session),
     users: [],
     tasks: [],
+    profilePlan: [],
     completions: [],
     rewards: [],
     redemptions: [],
@@ -508,6 +522,7 @@ function buildSetupRequiredSnapshot(
     session: getDashboardSession(session),
     users: [],
     tasks: [],
+    profilePlan: [],
     completions: [],
     rewards: [],
     redemptions: [],
@@ -701,6 +716,7 @@ export async function getDashboardSnapshot(
   const [
     usersResult,
     tasksResult,
+    profilePlanResult,
     completionsResult,
     rewardsResult,
     redemptionsResult,
@@ -708,6 +724,12 @@ export async function getDashboardSnapshot(
   ] = await Promise.all([
     supabase.from("users").select("*").eq("family_id", family.id).order("created_at"),
     supabase.from("tasks").select("*").eq("family_id", family.id).order("created_at"),
+    supabase
+      .from("profile_plan_entries")
+      .select("*")
+      .eq("family_id", family.id)
+      .order("slot_index")
+      .order("weekday"),
     supabase
       .from("completions")
       .select("*")
@@ -733,6 +755,9 @@ export async function getDashboardSnapshot(
   }
   if (tasksResult.error) {
     fail("Görevler alınamadı", tasksResult.error);
+  }
+  if (profilePlanResult.error && !isMissingTableError(profilePlanResult.error)) {
+    fail("Plan alınamadı", profilePlanResult.error);
   }
   if (completionsResult.error) {
     fail("Tamamlanma kayitlari alinamadi", completionsResult.error);
@@ -762,6 +787,7 @@ export async function getDashboardSnapshot(
     session: getDashboardSession(session),
     users: visibleUsers,
     tasks: (tasksResult.data ?? []) as TaskRecord[],
+    profilePlan: profilePlanResult.error ? [] : profilePlanResult.data ?? [],
     completions: completionsResult.data ?? [],
     rewards: (rewardsResult.data ?? []) as RewardRecord[],
     redemptions: redemptionsResult.data ?? [],
@@ -1008,6 +1034,71 @@ export async function saveTask(familyId: string, payload: TaskFormPayload) {
 
   if (error) {
     fail("Görev oluşturulamadı", error);
+  }
+}
+
+export async function saveProfilePlan(
+  familyId: string,
+  payload: ProfilePlanSavePayload
+) {
+  if (!isSupabaseConfigured()) {
+    return saveLocalProfilePlan(familyId, payload);
+  }
+
+  const supabase = createAdminClient();
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("id", payload.userId)
+    .eq("family_id", familyId)
+    .maybeSingle();
+
+  if (userError) {
+    fail("Profil doğrulanamadı", userError);
+  }
+
+  if (!user || isAccountMarkerName(user.name)) {
+    throw new Error("Profil bulunamadı.");
+  }
+
+  const entries = payload.entries
+    .map((entry) => ({
+      family_id: familyId,
+      user_id: payload.userId,
+      weekday: entry.weekday,
+      slot_index: entry.slotIndex,
+      slot_label: entry.slotLabel.trim() || `${entry.slotIndex}. Satır`,
+      start_time: entry.startTime,
+      end_time: entry.endTime,
+      title: entry.title.trim()
+    }));
+
+  const { error: deleteError } = await supabase
+    .from("profile_plan_entries")
+    .delete()
+    .eq("family_id", familyId)
+    .eq("user_id", payload.userId);
+
+  if (deleteError) {
+    if (isMissingTableError(deleteError)) {
+      throw new Error("Plan tablosu canlı veritabanında henüz oluşturulmamış.");
+    }
+
+    fail("Plan temizlenemedi", deleteError);
+  }
+
+  if (entries.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from("profile_plan_entries").insert(entries);
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      throw new Error("Plan tablosu canlı veritabanında henüz oluşturulmamış.");
+    }
+
+    fail("Plan kaydedilemedi", error);
   }
 }
 

@@ -23,6 +23,8 @@ import type {
   DashboardPayload,
   FamilySettingsPayload,
   FamilyRecord,
+  ProfilePlanEntryRecord,
+  ProfilePlanSavePayload,
   PointEventRecord,
   RedemptionRecord,
   RewardFormPayload,
@@ -51,6 +53,7 @@ interface LocalFamilyState {
   family: LocalFamilyRecord;
   users: UserRecord[];
   tasks: TaskRecord[];
+  profilePlan: ProfilePlanEntryRecord[];
   completions: CompletionRecord[];
   rewards: RewardRecord[];
   redemptions: RedemptionRecord[];
@@ -129,6 +132,7 @@ function getEmptyDashboardSnapshot(session: AppSession | null): DashboardPayload
     session: getDashboardSession(session),
     users: [],
     tasks: [],
+    profilePlan: [],
     completions: [],
     rewards: [],
     redemptions: [],
@@ -201,6 +205,7 @@ function toSnapshot(session: AppSession | null): DashboardPayload {
     session: getDashboardSession(session),
     users: clone(familyState.users).map(normalizeLocalUserRecord),
     tasks: clone(familyState.tasks),
+    profilePlan: clone(familyState.profilePlan ?? []),
     completions: clone(familyState.completions),
     rewards: clone(familyState.rewards),
     redemptions: clone(familyState.redemptions),
@@ -332,6 +337,7 @@ export async function bootstrapLocalApp(accountId: string, payload: SetupPayload
     },
     users,
     tasks: payload.includeSampleData ? buildSampleTasks(familyId, assignedUserIds, createdAt) : [],
+    profilePlan: [],
     completions: [],
     rewards: payload.includeSampleData
       ? [
@@ -449,6 +455,7 @@ export async function deleteLocalUser(familyId: string, userId: string) {
     .filter((task) => task.assigned_to.length > 0);
 
   familyState.completions = familyState.completions.filter((item) => item.user_id !== userId);
+  familyState.profilePlan = (familyState.profilePlan ?? []).filter((item) => item.user_id !== userId);
   familyState.redemptions = familyState.redemptions.filter((item) => item.user_id !== userId);
   familyState.pointEvents = familyState.pointEvents.filter((item) => item.user_id !== userId);
   familyState.users = familyState.users.filter((item) => item.id !== userId);
@@ -508,6 +515,38 @@ export async function reorderLocalTasks(familyId: string, orderedTaskIds: string
 
   remainingTasks.splice(firstAffectedIndex, 0, ...orderedTasks);
   familyState.tasks = remainingTasks;
+  persistState();
+}
+
+export async function saveLocalProfilePlan(
+  familyId: string,
+  payload: ProfilePlanSavePayload
+) {
+  const familyState = getFamilyState(familyId);
+
+  if (!familyState.users.some((user) => user.id === payload.userId)) {
+    throw new Error("Profil bulunamadı.");
+  }
+
+  const createdAt = nowIso();
+  const nextEntries = payload.entries
+    .map((entry) => ({
+      id: randomUUID(),
+      family_id: familyId,
+      user_id: payload.userId,
+      weekday: entry.weekday,
+      slot_index: entry.slotIndex,
+      slot_label: entry.slotLabel.trim() || `${entry.slotIndex}. Satır`,
+      start_time: entry.startTime,
+      end_time: entry.endTime,
+      title: entry.title.trim(),
+      created_at: createdAt
+    }));
+
+  familyState.profilePlan = [
+    ...(familyState.profilePlan ?? []).filter((entry) => entry.user_id !== payload.userId),
+    ...nextEntries
+  ];
   persistState();
 }
 

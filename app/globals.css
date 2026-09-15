@@ -3625,14 +3625,19 @@ button {
 
 .command-home-grid {
   display: grid;
+  gap: 1rem;
   justify-items: center;
   padding-top: 1rem;
 }
 
-.command-home-grid .command-today {
+.command-home-grid .command-today,
+.command-home-grid .command-plan-preview {
   grid-area: auto;
   width: min(100%, 78rem);
-  min-height: calc(100vh - 7.8rem);
+}
+
+.command-home-grid .command-today {
+  min-height: 18rem;
   border-color: rgba(31, 35, 28, 0.14);
   background:
     linear-gradient(135deg, rgba(21, 23, 18, 0.035), rgba(255, 254, 249, 0.86) 58%),
@@ -4324,6 +4329,225 @@ button {
   padding: 1.4rem;
   color: var(--command-muted);
   font-weight: 800;
+}
+
+.command-plan-preview {
+  border: 1px solid var(--command-line);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--member-accent, var(--selected-accent)), transparent 92%), transparent 66%),
+    rgba(255, 254, 249, 0.84);
+  padding: 1rem;
+}
+
+.command-plan-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.command-plan-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 4px solid var(--selected-accent);
+  background: rgba(255, 254, 249, 0.74);
+  padding: 0.72rem 0.85rem;
+}
+
+.command-plan-item div {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.command-plan-item strong {
+  overflow: hidden;
+  color: var(--command-ink);
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-plan-item span,
+.command-plan-item time,
+.command-plan-footer {
+  color: var(--command-muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.command-plan-item time {
+  white-space: nowrap;
+}
+
+.command-plan-footer {
+  margin-top: 0.75rem;
+  text-align: right;
+}
+
+.parent-plan-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: #fffef9;
+}
+
+.parent-plan-table {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.parent-plan-table th,
+.parent-plan-table td {
+  border-right: 1px solid rgba(21, 23, 18, 0.1);
+  border-bottom: 1px solid rgba(21, 23, 18, 0.1);
+  padding: 0.72rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.parent-plan-table thead th {
+  background: #151712;
+  color: #fffef9;
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.parent-plan-table thead th:nth-child(2) {
+  background: #d94675;
+}
+
+.parent-plan-table thead th:nth-child(3) {
+  background: #0ea5e9;
+}
+
+.parent-plan-table thead th:nth-child(4) {
+  background: #22c55e;
+}
+
+.parent-plan-table thead th:nth-child(5) {
+  background: #eab308;
+  color: #151712;
+}
+
+.parent-plan-table thead th:nth-child(6) {
+  background: #a855f7;
+}
+
+.parent-plan-table thead th:nth-child(7) {
+  background: #14b8a6;
+}
+
+.parent-plan-table thead th:nth-child(8) {
+  background: #f97316;
+}
+
+.parent-plan-table tbody th {
+  width: 8rem;
+  background: #f3f4f6;
+  color: #151712;
+  font-weight: 950;
+}
+
+.parent-plan-table td:nth-child(2) {
+  background: rgba(244, 114, 182, 0.16);
+}
+
+.parent-plan-table td:nth-child(3) {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.parent-plan-table td:nth-child(4) {
+  background: rgba(74, 222, 128, 0.15);
+}
+
+.parent-plan-table td:nth-child(5) {
+  background: rgba(250, 204, 21, 0.18);
+}
+
+.parent-plan-table td:nth-child(6) {
+  background: rgba(192, 132, 252, 0.16);
+}
+
+.parent-plan-table td:nth-child(7) {
+  background: rgba(45, 212, 191, 0.14);
+}
+
+.parent-plan-table td:nth-child(8) {
+  background: rgba(251, 146, 60, 0.14);
+}
+
+.parent-plan-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.parent-plan-summary div {
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: rgba(255, 254, 249, 0.72);
+  padding: 0.9rem;
+}
+
+.parent-plan-summary span,
+.parent-plan-summary strong {
+  display: block;
+}
+
+.parent-plan-summary span {
+  color: #6e746b;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.parent-plan-summary strong {
+  margin-top: 0.18rem;
+  color: #151712;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.parent-plan-row-input,
+.parent-plan-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: rgba(255, 254, 249, 0.8);
+  padding: 0.62rem 0.7rem;
+  color: #151712;
+  font-weight: 850;
+  text-align: center;
+}
+
+.parent-plan-row-input {
+  background: rgba(255, 254, 249, 0.94);
+}
+
+.parent-plan-time-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.parent-plan-time-fields input {
+  width: 100%;
+  border: 1px solid rgba(21, 23, 18, 0.1);
+  background: rgba(255, 254, 249, 0.78);
+  padding: 0.42rem 0.3rem;
+  color: #5f675c;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.parent-plan-row-input:focus,
+.parent-plan-input:focus,
+.parent-plan-time-fields input:focus {
+  outline: 2px solid rgba(20, 184, 166, 0.35);
+  outline-offset: 1px;
 }
 
 .command-task-panel {

@@ -43,6 +43,19 @@ export interface TaskRecord {
   created_at: string;
 }
 
+export interface ProfilePlanEntryRecord {
+  id: string;
+  family_id: string;
+  user_id: string;
+  weekday: string;
+  slot_index: number;
+  slot_label: string;
+  start_time: string;
+  end_time: string;
+  title: string;
+  created_at: string;
+}
+
 export interface CompletionRecord {
   id: string;
   family_id: string;
@@ -98,6 +111,7 @@ export interface DashboardPayload {
   session: DashboardSession;
   users: UserRecord[];
   tasks: TaskRecord[];
+  profilePlan: ProfilePlanEntryRecord[];
   completions: CompletionRecord[];
   rewards: RewardRecord[];
   redemptions: RedemptionRecord[];
@@ -165,6 +179,18 @@ export interface TaskFormPayload {
   days: string[];
   specialDates: string[];
   timeBlock: TimeBlock;
+}
+
+export interface ProfilePlanSavePayload {
+  userId: string;
+  entries: Array<{
+    weekday: string;
+    slotIndex: number;
+    slotLabel: string;
+    startTime: string;
+    endTime: string;
+    title: string;
+  }>;
 }
 
 export interface RewardFormPayload {

@@ -2,17 +2,24 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, CheckCircle2, History, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, History, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { formatAllowance } from "@/lib/allowance";
 import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
 import { getDateKey, isTaskCompleted, isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
+import {
+  DEFAULT_PLAN_SLOTS,
+  PLAN_WEEKDAYS,
+  PLAN_WEEKDAY_LABELS
+} from "@/lib/profile-plan";
 import { DEFAULT_TASK_ICON } from "@/lib/task-defaults";
 import type {
   AccountPasswordChangePayload,
   DashboardPayload,
   FamilySettingsPayload,
+  ProfilePlanEntryRecord,
+  ProfilePlanSavePayload,
   ParentPinChangePayload,
   TaskFormPayload,
   TaskRecord,
@@ -20,7 +27,7 @@ import type {
   UserFormPayload
 } from "@/lib/types";
 
-type TabId = "kullanicilar" | "gorevler" | "harcliklar" | "gecmis" | "ayarlar";
+type TabId = "kullanicilar" | "gorevler" | "planlar" | "harcliklar" | "gecmis" | "ayarlar";
 
 interface ParentPanelProps {
   open: boolean;
@@ -33,6 +40,7 @@ interface ParentPanelProps {
   onDeleteUser: (userId: string) => Promise<void>;
   onSaveTask: (payload: TaskFormPayload) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<boolean>;
+  onSaveProfilePlan: (payload: ProfilePlanSavePayload) => Promise<void>;
   onReorderTasks: (orderedTaskIds: string[]) => Promise<void>;
   onAdjustPoints: (userId: string, delta: number, note: string) => Promise<void>;
   onUndoTaskCompletion: (
@@ -51,6 +59,7 @@ interface ParentPanelProps {
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: Users },
   { id: "gorevler", label: "Görevler", icon: CheckCircle2 },
+  { id: "planlar", label: "Planlar", icon: BookOpen },
   { id: "harcliklar", label: "Hesap", icon: Wallet },
   { id: "gecmis", label: "Geçmiş", icon: History },
   { id: "ayarlar", label: "Ayarlar", icon: Settings2 }
@@ -139,6 +148,14 @@ const WEEKDAY_PRESETS = [
 ] as const;
 
 type TaskListTimeFilter = "tum" | TimeBlock;
+interface ProfilePlanDraft {
+  slots: Record<number, {
+    label: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  cells: Record<string, Record<number, string>>;
+}
 
 const POINT_ADD_PRESETS = [10, 20, 50, 100, 200];
 const POINT_SPEND_PRESETS = [-10, -20, -50, -100, -200];
@@ -161,6 +178,65 @@ const TASK_TIME_BLOCK_ORDER: Record<TimeBlock, number> = {
   aksam: 2,
   her_zaman: 3
 };
+
+function createEmptyProfilePlanDraft(): ProfilePlanDraft {
+  return {
+    slots: Object.fromEntries(
+      DEFAULT_PLAN_SLOTS.map((slot) => [
+        slot.slotIndex,
+        {
+          label: slot.label,
+          startTime: slot.startTime,
+          endTime: slot.endTime
+        }
+      ])
+    ) as ProfilePlanDraft["slots"],
+    cells: Object.fromEntries(
+      PLAN_WEEKDAYS.map((weekday) => [
+        weekday,
+        Object.fromEntries(DEFAULT_PLAN_SLOTS.map((slot) => [slot.slotIndex, ""]))
+      ])
+    ) as ProfilePlanDraft["cells"]
+  };
+}
+
+function createProfilePlanDraft(entries: ProfilePlanEntryRecord[], userId: string) {
+  const draft = createEmptyProfilePlanDraft();
+
+  entries
+    .filter((entry) => entry.user_id === userId)
+    .forEach((entry) => {
+      if (draft.slots[entry.slot_index]) {
+        draft.slots[entry.slot_index] = {
+          label: entry.slot_label,
+          startTime: entry.start_time,
+          endTime: entry.end_time
+        };
+      }
+
+      if (draft.cells[entry.weekday]) {
+        draft.cells[entry.weekday][entry.slot_index] = entry.title;
+      }
+    });
+
+  return draft;
+}
+
+function buildProfilePlanPayload(userId: string, draft: ProfilePlanDraft): ProfilePlanSavePayload {
+  return {
+    userId,
+    entries: PLAN_WEEKDAYS.flatMap((weekday) =>
+      DEFAULT_PLAN_SLOTS.map((slot) => ({
+        weekday,
+        slotIndex: slot.slotIndex,
+        slotLabel: draft.slots[slot.slotIndex]?.label.trim() || slot.label,
+        startTime: draft.slots[slot.slotIndex]?.startTime || slot.startTime,
+        endTime: draft.slots[slot.slotIndex]?.endTime || slot.endTime,
+        title: draft.cells[weekday]?.[slot.slotIndex]?.trim() ?? ""
+      }))
+    )
+  };
+}
 
 function hasSameDays(left: string[], right: readonly string[]) {
   return WEEKDAY_KEYS.every((key) => left.includes(key) === right.includes(key));
@@ -227,6 +303,7 @@ export function ParentPanel(props: ParentPanelProps) {
     onDeleteUser,
     onSaveTask,
     onDeleteTask,
+    onSaveProfilePlan,
     onReorderTasks,
     onAdjustPoints,
     onUndoTaskCompletion,
@@ -247,6 +324,8 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskSearch, setTaskSearch] = useState("");
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [taskUserView, setTaskUserView] = useState<string>("");
+  const [planUserView, setPlanUserView] = useState<string>("");
+  const [planDraft, setPlanDraft] = useState<ProfilePlanDraft>(() => createEmptyProfilePlanDraft());
   const [historyUserId, setHistoryUserId] = useState<string>("");
   const [historyDateKey, setHistoryDateKey] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -263,6 +342,7 @@ export function ParentPanel(props: ParentPanelProps) {
     setFamilyName(data.family.name);
     setAudioEnabled(data.family.audio_enabled);
     setPointsUserId((current) => current || data.users[0]?.id || "");
+    setPlanUserView((current) => current || data.users[0]?.id || "");
     setHistoryUserId((current) => current || data.users[0]?.id || "");
     setHistoryDateKey((current) => current || data.today.dateKey);
   }, [data]);
@@ -270,6 +350,7 @@ export function ParentPanel(props: ParentPanelProps) {
   useEffect(() => {
     if (!data?.users.length) {
       setTaskUserView("");
+      setPlanUserView("");
       setHistoryUserId("");
       return;
     }
@@ -277,6 +358,7 @@ export function ParentPanel(props: ParentPanelProps) {
     const validUserIds = new Set(data.users.map((user) => user.id));
 
     setTaskUserView((current) => (validUserIds.has(current) ? current : data.users[0].id));
+    setPlanUserView((current) => (validUserIds.has(current) ? current : data.users[0].id));
     setHistoryUserId((current) => (validUserIds.has(current) ? current : data.users[0].id));
     setTaskDraft((current) => {
       const currentOwnerId = current.assignedTo[0];
@@ -287,6 +369,15 @@ export function ParentPanel(props: ParentPanelProps) {
       return createTaskDraft(data.users[0].id);
     });
   }, [data?.users]);
+
+  useEffect(() => {
+    if (!planUserView) {
+      setPlanDraft(createEmptyProfilePlanDraft());
+      return;
+    }
+
+    setPlanDraft(createProfilePlanDraft(data?.profilePlan ?? [], planUserView));
+  }, [data?.profilePlan, planUserView]);
 
   useEffect(() => {
     if (!taskUserView) {
@@ -311,6 +402,17 @@ export function ParentPanel(props: ParentPanelProps) {
   );
   const taskUsers = data?.users ?? [];
   const selectedTaskUser = taskUserView ? userLookup[taskUserView] : undefined;
+  const selectedPlanUser = planUserView ? userLookup[planUserView] : undefined;
+  const selectedPlanCount = useMemo(
+    () =>
+      DEFAULT_PLAN_SLOTS.reduce(
+        (total, slot) =>
+          total +
+          PLAN_WEEKDAYS.filter((weekday) => planDraft.cells[weekday]?.[slot.slotIndex]?.trim()).length,
+        0
+      ),
+    [planDraft]
+  );
   const filteredTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
     return (data?.tasks ?? [])
@@ -1125,6 +1227,179 @@ export function ParentPanel(props: ParentPanelProps) {
     </div>
   );
 
+  const plansTab = (
+    <div className="space-y-5">
+      <div className="parent-management-toolbar">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-slate-950">Kişiye özel haftalık plan</div>
+            <div className="text-sm text-[color:var(--text-muted)]">
+              Ders, iş, izin, spor veya serbest ajanda olarak kullanabilirsiniz.
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {taskUsers.map((user) => {
+              const active = planUserView === user.id;
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => setPlanUserView(user.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    active ? "bg-slate-950 text-white" : "bg-white ring-1 ring-slate-200"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-base">
+                      <AvatarDisplay avatar={user.avatar} name={user.name} />
+                    </span>
+                    <span>{user.name}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Card
+        title="Haftalık plan tablosu"
+        description={
+          selectedPlanUser
+            ? `${selectedPlanUser.name} için hücrelere ders, iş, izin, spor veya not yazın.`
+            : "Önce profil seçin."
+        }
+      >
+        <div className="space-y-4">
+          <div className="parent-plan-summary">
+            <div>
+              <span>Profil</span>
+              <strong>{selectedPlanUser?.name ?? "Seçilmedi"}</strong>
+            </div>
+            <div>
+              <span>Dolu hücre</span>
+              <strong>{selectedPlanCount}</strong>
+            </div>
+          </div>
+
+          <div className="parent-plan-table-wrap">
+            <table className="parent-plan-table">
+              <thead>
+                <tr>
+                  <th>Satır / saat</th>
+                  {PLAN_WEEKDAYS.map((weekday) => (
+                    <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {DEFAULT_PLAN_SLOTS.map((slot) => (
+                  <tr key={slot.slotIndex}>
+                    <th>
+                      <input
+                        value={planDraft.slots[slot.slotIndex]?.label ?? slot.label}
+                        onChange={(event) =>
+                          setPlanDraft((current) => ({
+                            ...current,
+                            slots: {
+                              ...current.slots,
+                              [slot.slotIndex]: {
+                                ...(current.slots[slot.slotIndex] ?? slot),
+                                label: event.target.value
+                              }
+                            }
+                          }))
+                        }
+                        className="parent-plan-row-input"
+                        aria-label="Satır adı"
+                      />
+                      <div className="parent-plan-time-fields">
+                        <input
+                          type="time"
+                          value={planDraft.slots[slot.slotIndex]?.startTime ?? slot.startTime}
+                          onChange={(event) =>
+                            setPlanDraft((current) => ({
+                              ...current,
+                              slots: {
+                                ...current.slots,
+                                [slot.slotIndex]: {
+                                  ...(current.slots[slot.slotIndex] ?? slot),
+                                  startTime: event.target.value
+                                }
+                              }
+                            }))
+                          }
+                          aria-label="Başlangıç saati"
+                        />
+                        <input
+                          type="time"
+                          value={planDraft.slots[slot.slotIndex]?.endTime ?? slot.endTime}
+                          onChange={(event) =>
+                            setPlanDraft((current) => ({
+                              ...current,
+                              slots: {
+                                ...current.slots,
+                                [slot.slotIndex]: {
+                                  ...(current.slots[slot.slotIndex] ?? slot),
+                                  endTime: event.target.value
+                                }
+                              }
+                            }))
+                          }
+                          aria-label="Bitiş saati"
+                        />
+                      </div>
+                    </th>
+                    {PLAN_WEEKDAYS.map((weekday) => (
+                      <td key={weekday}>
+                        <input
+                          value={planDraft.cells[weekday]?.[slot.slotIndex] ?? ""}
+                          onChange={(event) =>
+                            setPlanDraft((current) => ({
+                              ...current,
+                              cells: {
+                                ...current.cells,
+                                [weekday]: {
+                                  ...current.cells[weekday],
+                                  [slot.slotIndex]: event.target.value
+                                }
+                              }
+                            }))
+                          }
+                          placeholder="Plan"
+                          className="parent-plan-input"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => selectedPlanUser ? onSaveProfilePlan(buildProfilePlanPayload(selectedPlanUser.id, planDraft)) : undefined}
+              disabled={working || !selectedPlanUser}
+              className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
+            >
+              Planı kaydet
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanDraft(createEmptyProfilePlanDraft())}
+              disabled={working || !selectedPlanUser}
+              className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800 disabled:opacity-60"
+            >
+              Tabloyu temizle
+            </button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+
   const pointsTab = (
     <div className="max-w-3xl">
       <Card title="Hesap hareketi" description="Ekstra para ekleyin veya yapılan harcamayı düşürün.">
@@ -1525,11 +1800,13 @@ export function ParentPanel(props: ParentPanelProps) {
     ? usersTab
     : tab === "gorevler"
       ? tasksTab
-      : tab === "harcliklar"
-        ? pointsTab
-        : tab === "gecmis"
-          ? historyTab
-          : settingsTab;
+      : tab === "planlar"
+        ? plansTab
+        : tab === "harcliklar"
+          ? pointsTab
+          : tab === "gecmis"
+            ? historyTab
+            : settingsTab;
 
   const body = !data?.session.parentAuthenticated
     ? lockedView
