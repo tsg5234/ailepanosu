@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const entries = body.entries.map((entry) => ({
       weekday: String(entry.weekday ?? ""),
       slotIndex: Number(entry.slotIndex),
-      slotLabel: String(entry.slotLabel ?? "").trim() || `${Number(entry.slotIndex)}. Satır`,
+      slotLabel: String(entry.slotLabel ?? "").trim(),
       startTime: String(entry.startTime ?? ""),
       endTime: String(entry.endTime ?? ""),
       title: String(entry.title ?? "").trim()
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     );
 
     if (invalidEntry) {
-      return jsonError("Planda geçersiz gün, saat veya satır var.");
+      return jsonError("Planda geçersiz gün, saat veya plan bilgisi var.");
     }
 
     await saveProfilePlan(session.familyId, {

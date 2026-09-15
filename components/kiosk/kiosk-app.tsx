@@ -540,12 +540,9 @@ function WeeklyPlanView({
               {DEFAULT_PLAN_SLOTS.map((slot) => (
                 <tr key={slot.slotIndex}>
                   <th>
-                    <span>{userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.slot_label || slot.label}</span>
-                    <small>
-                      {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.start_time || slot.startTime}
-                      {" - "}
-                      {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.end_time || slot.endTime}
-                    </small>
+                    {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.start_time || slot.startTime}
+                    {" - "}
+                    {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.end_time || slot.endTime}
                   </th>
                   {PLAN_WEEKDAYS.map((weekday) => {
                     const plan = getPlanEntry(userEntries, selectedStats.user.id, weekday, slot.slotIndex);

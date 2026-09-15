@@ -1286,7 +1286,7 @@ export function ParentPanel(props: ParentPanelProps) {
             <table className="parent-plan-table">
               <thead>
                 <tr>
-                  <th>Satır / saat</th>
+                  <th>Saat</th>
                   {PLAN_WEEKDAYS.map((weekday) => (
                     <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
                   ))}
@@ -1296,23 +1296,6 @@ export function ParentPanel(props: ParentPanelProps) {
                 {DEFAULT_PLAN_SLOTS.map((slot) => (
                   <tr key={slot.slotIndex}>
                     <th>
-                      <input
-                        value={planDraft.slots[slot.slotIndex]?.label ?? slot.label}
-                        onChange={(event) =>
-                          setPlanDraft((current) => ({
-                            ...current,
-                            slots: {
-                              ...current.slots,
-                              [slot.slotIndex]: {
-                                ...(current.slots[slot.slotIndex] ?? slot),
-                                label: event.target.value
-                              }
-                            }
-                          }))
-                        }
-                        className="parent-plan-row-input"
-                        aria-label="Satır adı"
-                      />
                       <div className="parent-plan-time-fields">
                         <input
                           type="time"

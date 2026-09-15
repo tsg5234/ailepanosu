@@ -536,7 +536,7 @@ export async function saveLocalProfilePlan(
       user_id: payload.userId,
       weekday: entry.weekday,
       slot_index: entry.slotIndex,
-      slot_label: entry.slotLabel.trim() || `${entry.slotIndex}. Satır`,
+      slot_label: entry.slotLabel.trim(),
       start_time: entry.startTime,
       end_time: entry.endTime,
       title: entry.title.trim(),
