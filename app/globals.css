@@ -4681,10 +4681,37 @@ button {
 }
 
 .parent-plan-toolbar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) minmax(9rem, 12rem) auto;
   align-items: center;
-  gap: 0.8rem;
+  justify-content: start;
+  gap: 0.7rem;
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: rgba(255, 254, 249, 0.72);
+  padding: 0.75rem;
+}
+
+.parent-plan-toolbar label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.parent-plan-toolbar label span {
+  color: #6e746b;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.parent-plan-toolbar input {
+  width: 100%;
+  border: 1px solid rgba(21, 23, 18, 0.14);
+  background: #fffef9;
+  padding: 0.6rem 0.55rem;
+  color: #151712;
+  font-size: 0.92rem;
+  font-weight: 900;
 }
 
 .parent-plan-toolbar button {
@@ -4703,17 +4730,10 @@ button {
   opacity: 0.55;
 }
 
-.parent-plan-toolbar span {
-  color: #6e746b;
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-
 .parent-plan-time-preview {
   display: block;
-  margin-bottom: 0.55rem;
   color: #151712;
-  font-size: 0.96rem;
+  font-size: 1rem;
   font-weight: 950;
   white-space: nowrap;
 }
@@ -4733,6 +4753,7 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+  margin-top: 0.55rem;
 }
 
 .parent-plan-time-fields label {
@@ -4758,18 +4779,30 @@ button {
   font-weight: 850;
 }
 
-.parent-plan-remove-row {
+.parent-plan-row-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.parent-plan-row-actions button {
   display: grid;
-  width: 2rem;
-  height: 2rem;
-  margin: 0.55rem auto 0;
+  width: 1.95rem;
+  height: 1.95rem;
   place-items: center;
-  border: 1px solid rgba(185, 28, 28, 0.18);
+  border: 1px solid rgba(21, 23, 18, 0.14);
+  background: rgba(255, 254, 249, 0.8);
+  color: #5f675c;
+}
+
+.parent-plan-row-actions button.is-danger {
+  border-color: rgba(185, 28, 28, 0.18);
   background: rgba(254, 242, 242, 0.78);
   color: #b91c1c;
 }
 
-.parent-plan-remove-row:disabled {
+.parent-plan-row-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.35;
 }

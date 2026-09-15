@@ -338,6 +338,9 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskUserView, setTaskUserView] = useState<string>("");
   const [planUserView, setPlanUserView] = useState<string>("");
   const [planDraft, setPlanDraft] = useState<ProfilePlanDraft>(() => createEmptyProfilePlanDraft());
+  const [newPlanStartTime, setNewPlanStartTime] = useState("19:00");
+  const [newPlanEndTime, setNewPlanEndTime] = useState("");
+  const [editingPlanSlot, setEditingPlanSlot] = useState<number | null>(null);
   const [historyUserId, setHistoryUserId] = useState<string>("");
   const [historyDateKey, setHistoryDateKey] = useState<string>("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -428,6 +431,10 @@ export function ParentPanel(props: ParentPanelProps) {
   );
   const canAddPlanSlot = planSlots.length < MAX_PLAN_SLOT_INDEX;
   const addPlanSlot = () => {
+    if (!newPlanStartTime) {
+      return;
+    }
+
     setPlanDraft((current) => {
       const usedIndexes = new Set(Object.keys(current.slots).map(Number));
       const nextIndex = Array.from({ length: MAX_PLAN_SLOT_INDEX }, (_, index) => index + 1).find(
@@ -438,16 +445,14 @@ export function ParentPanel(props: ParentPanelProps) {
         return current;
       }
 
-      const nextHour = String(Math.min(23, 18 + nextIndex - DEFAULT_PLAN_SLOTS.length)).padStart(2, "0");
-
       return {
         slots: {
           ...current.slots,
           [nextIndex]: {
             slotIndex: nextIndex,
             label: "",
-            startTime: `${nextHour}:00`,
-            endTime: ""
+            startTime: newPlanStartTime,
+            endTime: newPlanEndTime
           }
         },
         cells: Object.fromEntries(
@@ -461,6 +466,8 @@ export function ParentPanel(props: ParentPanelProps) {
         ) as ProfilePlanDraft["cells"]
       };
     });
+    setEditingPlanSlot(null);
+    setNewPlanEndTime("");
   };
   const removePlanSlot = (slotIndex: number) => {
     setPlanDraft((current) => {
@@ -482,6 +489,7 @@ export function ParentPanel(props: ParentPanelProps) {
         ) as ProfilePlanDraft["cells"]
       };
     });
+    setEditingPlanSlot((current) => (current === slotIndex ? null : current));
   };
   const filteredTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
@@ -1353,15 +1361,30 @@ export function ParentPanel(props: ParentPanelProps) {
           </div>
 
           <div className="parent-plan-toolbar">
+            <label>
+              <span>Başlangıç</span>
+              <input
+                type="time"
+                value={newPlanStartTime}
+                onChange={(event) => setNewPlanStartTime(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Bitiş opsiyonel</span>
+              <input
+                type="time"
+                value={newPlanEndTime}
+                onChange={(event) => setNewPlanEndTime(event.target.value)}
+              />
+            </label>
             <button
               type="button"
               onClick={addPlanSlot}
-              disabled={working || !selectedPlanUser || !canAddPlanSlot}
+              disabled={working || !selectedPlanUser || !canAddPlanSlot || !newPlanStartTime}
             >
               <Plus className="h-4 w-4" />
               Saat ekle
             </button>
-            <span>Tek saat için bitişi boş bırakın.</span>
           </div>
 
           <div className="parent-plan-table-wrap">
@@ -1384,58 +1407,70 @@ export function ParentPanel(props: ParentPanelProps) {
                           planDraft.slots[slot.slotIndex]?.endTime || ""
                         )}
                       </span>
-                      <div className="parent-plan-time-fields">
-                        <label>
-                          <span>Başlangıç</span>
-                          <input
-                            type="time"
-                            value={planDraft.slots[slot.slotIndex]?.startTime ?? slot.startTime}
-                            onChange={(event) =>
-                              setPlanDraft((current) => ({
-                                ...current,
-                                slots: {
-                                  ...current.slots,
-                                  [slot.slotIndex]: {
-                                    ...(current.slots[slot.slotIndex] ?? slot),
-                                    startTime: event.target.value
+                      {editingPlanSlot === slot.slotIndex ? (
+                        <div className="parent-plan-time-fields">
+                          <label>
+                            <span>Başlangıç</span>
+                            <input
+                              type="time"
+                              value={planDraft.slots[slot.slotIndex]?.startTime ?? slot.startTime}
+                              onChange={(event) =>
+                                setPlanDraft((current) => ({
+                                  ...current,
+                                  slots: {
+                                    ...current.slots,
+                                    [slot.slotIndex]: {
+                                      ...(current.slots[slot.slotIndex] ?? slot),
+                                      startTime: event.target.value
+                                    }
                                   }
-                                }
-                              }))
-                            }
-                            aria-label="Başlangıç saati"
-                          />
-                        </label>
-                        <label>
-                          <span>Bitiş</span>
-                          <input
-                            type="time"
-                            value={planDraft.slots[slot.slotIndex]?.endTime ?? slot.endTime}
-                            onChange={(event) =>
-                              setPlanDraft((current) => ({
-                                ...current,
-                                slots: {
-                                  ...current.slots,
-                                  [slot.slotIndex]: {
-                                    ...(current.slots[slot.slotIndex] ?? slot),
-                                    endTime: event.target.value
+                                }))
+                              }
+                              aria-label="Başlangıç saati"
+                            />
+                          </label>
+                          <label>
+                            <span>Bitiş</span>
+                            <input
+                              type="time"
+                              value={planDraft.slots[slot.slotIndex]?.endTime ?? slot.endTime}
+                              onChange={(event) =>
+                                setPlanDraft((current) => ({
+                                  ...current,
+                                  slots: {
+                                    ...current.slots,
+                                    [slot.slotIndex]: {
+                                      ...(current.slots[slot.slotIndex] ?? slot),
+                                      endTime: event.target.value
+                                    }
                                   }
-                                }
-                              }))
-                            }
-                            aria-label="Bitiş saati"
-                          />
-                        </label>
+                                }))
+                              }
+                              aria-label="Bitiş saati"
+                            />
+                          </label>
+                        </div>
+                      ) : null}
+                      <div className="parent-plan-row-actions">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPlanSlot((current) => current === slot.slotIndex ? null : slot.slotIndex)}
+                          aria-label="Saati düzenle"
+                          title="Saati düzenle"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="is-danger"
+                          onClick={() => removePlanSlot(slot.slotIndex)}
+                          disabled={working || planSlots.length <= 1}
+                          aria-label="Saati sil"
+                          title="Saati sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="parent-plan-remove-row"
-                        onClick={() => removePlanSlot(slot.slotIndex)}
-                        disabled={working || planSlots.length <= 1}
-                        aria-label="Saati sil"
-                        title="Saati sil"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </th>
                     {PLAN_WEEKDAYS.map((weekday) => (
                       <td key={weekday}>
