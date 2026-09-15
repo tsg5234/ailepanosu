@@ -31,15 +31,16 @@ import { ParentPanel } from "@/components/kiosk/parent-panel";
 import { PinModal } from "@/components/kiosk/pin-modal";
 import { SetupScreen } from "@/components/kiosk/setup-screen";
 import {
-  getTodayPlanEntries,
-  PLAN_WEEKDAY_SHORT_LABELS
+  DEFAULT_PLAN_SLOTS,
+  getPlanEntry,
+  PLAN_WEEKDAYS,
+  PLAN_WEEKDAY_LABELS
 } from "@/lib/profile-plan";
 import {
   getActiveTimeBlock,
   getDateKey,
   getDigitalTimeLabel,
   getTasksForUserOnDate,
-  getWeekdayKey,
   isTaskCompleted
 } from "@/lib/schedule";
 import type {
@@ -58,7 +59,7 @@ interface KioskAppProps {
   mode: "dashboard" | "yonetim";
 }
 
-type DashboardView = "home" | "profiles";
+type DashboardView = "home" | "tasks" | "plan";
 
 interface NavAction {
   icon: ComponentType<{ className?: string }>;
@@ -256,11 +257,13 @@ function DashboardHeader({
 function TodayOverview({
   stats,
   selectedUser,
-  onSelect
+  onOpenTasks,
+  onOpenPlan
 }: {
   stats: MemberStats[];
   selectedUser: UserRecord;
-  onSelect: (userId: string) => void;
+  onOpenTasks: (userId: string) => void;
+  onOpenPlan: (userId: string) => void;
 }) {
   return (
     <section className="command-today">
@@ -274,10 +277,8 @@ function TodayOverview({
           const selected = item.user.id === selectedUser.id;
 
           return (
-            <button
+            <article
               key={item.user.id}
-              type="button"
-              onClick={() => onSelect(item.user.id)}
               className={`command-member-row ${selected ? "is-selected" : ""}`}
               style={{ "--member-accent": accent } as CSSProperties}
             >
@@ -286,18 +287,19 @@ function TodayOverview({
               </span>
               <span className="command-member-copy">
                 <span className="command-member-name">{item.user.name}</span>
-                <span className="command-member-status">
-                  {item.openCount === 0 ? "Tüm görevler tamam" : `${item.openCount} açık görev`}
-                </span>
+                <span className="command-member-status">Bugünkü alanını seç</span>
               </span>
-              <span
-                className={`command-member-state ${item.openCount === 0 ? "is-done" : "is-open"}`}
-                aria-label={item.openCount === 0 ? "Görevler tamam" : "Bekleyen görev var"}
-                title={item.openCount === 0 ? "Görevler tamam" : "Bekleyen görev var"}
-              >
-                {item.openCount === 0 ? <CheckCircle2 className="h-5 w-5" /> : <Clock3 className="h-5 w-5" />}
+              <span className="command-member-actions">
+                <button type="button" onClick={() => onOpenTasks(item.user.id)}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>{item.openCount === 0 ? "Görevler tamam" : `${item.openCount} açık görev`}</span>
+                </button>
+                <button type="button" onClick={() => onOpenPlan(item.user.id)}>
+                  <CalendarDays className="h-4 w-4" />
+                  <span>Planlama</span>
+                </button>
               </span>
-            </button>
+            </article>
           );
         })}
       </div>
@@ -305,53 +307,10 @@ function TodayOverview({
   );
 }
 
-function TodayPlanPreview({
-  user,
-  entries,
-  weekday
-}: {
-  user: UserRecord;
-  entries: ProfilePlanEntryRecord[];
-  weekday: string;
-}) {
-  const todayEntries = getTodayPlanEntries(entries, user.id, weekday);
-
-  return (
-    <section className="command-plan-preview">
-      <div className="command-section-heading">
-        <span>Plan</span>
-        <strong>Bugünün planı</strong>
-      </div>
-      {todayEntries.length === 0 ? (
-        <div className="command-profile-empty">{user.name} için bugün plan eklenmemiş.</div>
-      ) : (
-        <div className="command-plan-list">
-          {todayEntries.map((entry) => (
-            <article key={entry.id} className="command-plan-item">
-              <div>
-                <strong>{entry.title}</strong>
-                <span>{entry.slot_label}</span>
-              </div>
-              <time>
-                {entry.start_time} - {entry.end_time}
-              </time>
-            </article>
-          ))}
-        </div>
-      )}
-      <div className="command-plan-footer">
-        <span>{PLAN_WEEKDAY_SHORT_LABELS[weekday as keyof typeof PLAN_WEEKDAY_SHORT_LABELS] ?? "Bugün"}</span>
-      </div>
-    </section>
-  );
-}
-
-function ProfilesDirectory({
+function ProfileTasksView({
   stats,
   selectedUser,
   completions,
-  profilePlan,
-  weekday,
   dateKey,
   pendingTaskKeys,
   onSelect,
@@ -361,8 +320,6 @@ function ProfilesDirectory({
   stats: MemberStats[];
   selectedUser: UserRecord;
   completions: CompletionRecord[];
-  profilePlan: ProfilePlanEntryRecord[];
-  weekday: string;
   dateKey: string;
   pendingTaskKeys: string[];
   onSelect: (userId: string) => void;
@@ -492,7 +449,114 @@ function ProfilesDirectory({
           )}
         </div>
 
-        <TodayPlanPreview user={selectedStats.user} entries={profilePlan} weekday={weekday} />
+      </article>
+    </section>
+  );
+}
+
+function WeeklyPlanView({
+  stats,
+  selectedUser,
+  entries,
+  onSelect
+}: {
+  stats: MemberStats[];
+  selectedUser: UserRecord;
+  entries: ProfilePlanEntryRecord[];
+  onSelect: (userId: string) => void;
+}) {
+  const selectedStats = stats.find((item) => item.user.id === selectedUser.id) ?? stats[0] ?? null;
+
+  if (!selectedStats) {
+    return null;
+  }
+
+  const accent = getMemberAccent(selectedStats.user.color);
+  const userEntries = entries.filter((entry) => entry.user_id === selectedStats.user.id);
+  const filledCount = userEntries.filter((entry) => entry.title.trim()).length;
+
+  return (
+    <section className="command-plan-view">
+      <div className="command-profiles-list">
+        <div className="command-section-heading">
+          <span>Planlama</span>
+          <strong>Profil seç</strong>
+        </div>
+        <div className="command-profile-cards">
+          {stats.map((item) => {
+            const itemAccent = getMemberAccent(item.user.color);
+            const selected = item.user.id === selectedStats.user.id;
+            const itemFilledCount = entries.filter(
+              (entry) => entry.user_id === item.user.id && entry.title.trim()
+            ).length;
+
+            return (
+              <button
+                key={item.user.id}
+                type="button"
+                className={`command-profile-card ${selected ? "is-selected" : ""}`}
+                style={{ "--member-accent": itemAccent } as CSSProperties}
+                onClick={() => onSelect(item.user.id)}
+              >
+                <span className="command-profile-card-avatar">
+                  <AvatarDisplay avatar={item.user.avatar} name={item.user.name} />
+                </span>
+                <span className="command-profile-card-copy">
+                  <strong>{item.user.name}</strong>
+                  <em>{itemFilledCount} plan</em>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <article className="command-week-plan" style={{ "--member-accent": accent } as CSSProperties}>
+        <div className="command-profile-detail-head">
+          <div className="command-profile-detail-avatar">
+            <AvatarDisplay avatar={selectedStats.user.avatar} name={selectedStats.user.name} />
+          </div>
+          <div className="command-profile-detail-title">
+            <h2>{selectedStats.user.name}</h2>
+          </div>
+        </div>
+
+        <div className="command-week-plan-title">
+          <span>Haftalık planlama</span>
+          <strong>{filledCount === 0 ? "Plan eklenmemiş" : `${filledCount} dolu hücre`}</strong>
+        </div>
+
+        <div className="command-week-table-wrap">
+          <table className="command-week-table">
+            <thead>
+              <tr>
+                <th>Saat</th>
+                {PLAN_WEEKDAYS.map((weekday) => (
+                  <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {DEFAULT_PLAN_SLOTS.map((slot) => (
+                <tr key={slot.slotIndex}>
+                  <th>
+                    <span>{userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.slot_label || slot.label}</span>
+                    <small>
+                      {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.start_time || slot.startTime}
+                      {" - "}
+                      {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.end_time || slot.endTime}
+                    </small>
+                  </th>
+                  {PLAN_WEEKDAYS.map((weekday) => {
+                    const plan = getPlanEntry(userEntries, selectedStats.user.id, weekday, slot.slotIndex);
+
+                    return <td key={weekday}>{plan?.title || "-"}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </article>
     </section>
   );
@@ -600,11 +664,6 @@ export function KioskApp({ mode }: KioskAppProps) {
     () => (data ? getActiveTimeBlock(referenceNow, data.family, "ebeveyn") : "sabah"),
     [data, referenceNow]
   );
-  const todayWeekdayKey = useMemo(
-    () => (data ? getWeekdayKey(referenceNow, data.family) : "pzt"),
-    [data, referenceNow]
-  );
-
   const memberStats = useMemo<MemberStats[]>(() => {
     if (!data) {
       return [];
@@ -789,10 +848,10 @@ export function KioskApp({ mode }: KioskAppProps) {
     },
     {
       icon: Users,
-      label: "Profiller",
-      active: dashboardView === "profiles",
+      label: "Görevler",
+      active: dashboardView === "tasks",
       onClick: () => {
-        setDashboardView("profiles");
+        setDashboardView("tasks");
         const firstUser = allUsers[0];
         if (firstUser) {
           setActiveProfile(firstUser.id);
@@ -877,19 +936,17 @@ export function KioskApp({ mode }: KioskAppProps) {
           actions={quickActions}
         />
 
-        {dashboardView === "profiles" ? (
+        {dashboardView === "tasks" ? (
           <motion.div
-            key="profiles"
+            key="tasks"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
-            <ProfilesDirectory
+            <ProfileTasksView
               stats={memberStats}
               selectedUser={selectedUser}
               completions={data.completions}
-              profilePlan={data.profilePlan}
-              weekday={todayWeekdayKey}
               dateKey={todayDateKey}
               pendingTaskKeys={pendingTaskKeys}
               onSelect={setActiveProfile}
@@ -899,6 +956,20 @@ export function KioskApp({ mode }: KioskAppProps) {
               onUndo={(task) =>
                 void undoTaskCompletion(task.id, selectedUser.id, todayDateKey, task.title)
               }
+            />
+          </motion.div>
+        ) : dashboardView === "plan" ? (
+          <motion.div
+            key="plan"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            <WeeklyPlanView
+              stats={memberStats}
+              selectedUser={selectedUser}
+              entries={data.profilePlan}
+              onSelect={setActiveProfile}
             />
           </motion.div>
         ) : (
@@ -912,12 +983,15 @@ export function KioskApp({ mode }: KioskAppProps) {
             <TodayOverview
               stats={memberStats}
               selectedUser={selectedUser}
-              onSelect={(userId) => {
+              onOpenTasks={(userId) => {
                 setActiveProfile(userId);
-                setDashboardView("profiles");
+                setDashboardView("tasks");
+              }}
+              onOpenPlan={(userId) => {
+                setActiveProfile(userId);
+                setDashboardView("plan");
               }}
             />
-            <TodayPlanPreview user={selectedUser} entries={data.profilePlan} weekday={todayWeekdayKey} />
           </motion.div>
         )}
       </main>

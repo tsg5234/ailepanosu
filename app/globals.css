@@ -3630,8 +3630,7 @@ button {
   padding-top: 1rem;
 }
 
-.command-home-grid .command-today,
-.command-home-grid .command-plan-preview {
+.command-home-grid .command-today {
   grid-area: auto;
   width: min(100%, 78rem);
 }
@@ -3658,8 +3657,8 @@ button {
 }
 
 .command-home-grid .command-member-row {
-  grid-template-columns: 6.2rem minmax(0, 1fr) 3.2rem;
-  min-height: 8.1rem;
+  grid-template-columns: 6.2rem minmax(0, 1fr) minmax(14rem, 0.58fr);
+  min-height: 9rem;
   border-color: color-mix(in srgb, var(--member-accent), transparent 70%);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--member-accent), transparent 90%), rgba(255, 254, 249, 0.9) 50%),
@@ -3684,11 +3683,6 @@ button {
 .command-home-grid .command-member-status {
   margin-top: 0.12rem;
   font-size: 0.9rem;
-}
-
-.command-home-grid .command-member-state {
-  width: 2.75rem;
-  height: 2.75rem;
 }
 
 .command-hero {
@@ -4064,7 +4058,37 @@ button {
   background: rgba(255, 254, 249, 0.78);
 }
 
-.command-profiles-view {
+.command-member-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.command-member-actions button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--member-accent), transparent 58%);
+  background: rgba(255, 254, 249, 0.8);
+  padding: 0.72rem 0.8rem;
+  color: color-mix(in srgb, var(--member-accent), #151712 24%);
+  font-size: 0.86rem;
+  font-weight: 950;
+  transition: 150ms ease;
+}
+
+.command-member-actions button:first-child {
+  background: color-mix(in srgb, var(--member-accent), transparent 86%);
+}
+
+.command-member-actions button:hover {
+  background: var(--member-accent);
+  color: #fff;
+}
+
+.command-profiles-view,
+.command-plan-view {
   display: grid;
   grid-template-columns: minmax(18rem, 0.72fr) minmax(32rem, 1.8fr);
   gap: 1rem;
@@ -4072,7 +4096,8 @@ button {
 }
 
 .command-profiles-list,
-.command-profile-detail {
+.command-profile-detail,
+.command-week-plan {
   border: 1px solid var(--command-line);
   background: rgba(255, 254, 249, 0.78);
   padding: 1rem;
@@ -4337,6 +4362,150 @@ button {
     linear-gradient(90deg, color-mix(in srgb, var(--member-accent, var(--selected-accent)), transparent 92%), transparent 66%),
     rgba(255, 254, 249, 0.84);
   padding: 1rem;
+}
+
+.command-week-plan {
+  --member-accent: var(--selected-accent);
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--member-accent), transparent 93%), transparent 64%),
+    rgba(255, 254, 249, 0.9);
+}
+
+.command-week-plan-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid var(--command-line);
+  padding-top: 1rem;
+}
+
+.command-week-plan-title span {
+  color: var(--command-muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.command-week-plan-title strong {
+  color: var(--command-ink);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.command-week-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(21, 23, 18, 0.16);
+  background: #fffef9;
+}
+
+.command-week-table {
+  width: 100%;
+  min-width: 62rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.command-week-table th,
+.command-week-table td {
+  border-right: 1px solid rgba(21, 23, 18, 0.12);
+  border-bottom: 1px solid rgba(21, 23, 18, 0.12);
+  padding: 0.9rem 0.75rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.command-week-table thead th {
+  background: #151712;
+  color: #fffef9;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.command-week-table thead th:nth-child(2) {
+  background: #d94675;
+}
+
+.command-week-table thead th:nth-child(3) {
+  background: #0ea5e9;
+}
+
+.command-week-table thead th:nth-child(4) {
+  background: #22c55e;
+}
+
+.command-week-table thead th:nth-child(5) {
+  background: #eab308;
+  color: #151712;
+}
+
+.command-week-table thead th:nth-child(6) {
+  background: #a855f7;
+}
+
+.command-week-table thead th:nth-child(7) {
+  background: #14b8a6;
+}
+
+.command-week-table thead th:nth-child(8) {
+  background: #f97316;
+}
+
+.command-week-table tbody th {
+  width: 8rem;
+  background: #f3f4f6;
+  color: #151712;
+  font-weight: 950;
+}
+
+.command-week-table tbody th span,
+.command-week-table tbody th small {
+  display: block;
+}
+
+.command-week-table tbody th small {
+  margin-top: 0.16rem;
+  color: #5f675c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.command-week-table td {
+  color: #151712;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.command-week-table td:nth-child(2) {
+  background: rgba(244, 114, 182, 0.16);
+}
+
+.command-week-table td:nth-child(3) {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.command-week-table td:nth-child(4) {
+  background: rgba(74, 222, 128, 0.15);
+}
+
+.command-week-table td:nth-child(5) {
+  background: rgba(250, 204, 21, 0.18);
+}
+
+.command-week-table td:nth-child(6) {
+  background: rgba(192, 132, 252, 0.16);
+}
+
+.command-week-table td:nth-child(7) {
+  background: rgba(45, 212, 191, 0.14);
+}
+
+.command-week-table td:nth-child(8) {
+  background: rgba(251, 146, 60, 0.14);
 }
 
 .command-plan-list {
@@ -4760,7 +4929,8 @@ button {
       "tasks";
   }
 
-  .command-profiles-view {
+  .command-profiles-view,
+  .command-plan-view {
     grid-template-columns: 1fr;
   }
 
