@@ -941,6 +941,18 @@ export function KioskApp({ mode }: KioskAppProps) {
       }
     },
     {
+      icon: CalendarDays,
+      label: "Planlama",
+      active: dashboardView === "plan",
+      onClick: () => {
+        setDashboardView("plan");
+        const firstUser = allUsers[0];
+        if (firstUser) {
+          setActiveProfile(firstUser.id);
+        }
+      }
+    },
+    {
       icon: data.session.parentAuthenticated ? PanelRightOpen : Lock,
       label: "Yönetim",
       emphasis: true,
