@@ -33,7 +33,9 @@ import { SetupScreen } from "@/components/kiosk/setup-screen";
 import {
   formatPlanTime,
   getPlanEntry,
+  getProfilePlanType,
   getPlanSlotsFromEntries,
+  type ProfilePlanType,
   PLAN_WEEKDAYS,
   PLAN_WEEKDAY_LABELS
 } from "@/lib/profile-plan";
@@ -455,6 +457,64 @@ function ProfileTasksView({
   );
 }
 
+function PlanTable({
+  title,
+  summary,
+  emptyText,
+  planType,
+  user,
+  entries,
+  includeDefaultSlots
+}: {
+  title: string;
+  summary: string;
+  emptyText: string;
+  planType: ProfilePlanType;
+  user: UserRecord;
+  entries: ProfilePlanEntryRecord[];
+  includeDefaultSlots: boolean;
+}) {
+  const slots = getPlanSlotsFromEntries(entries, includeDefaultSlots);
+
+  return (
+    <section className="command-week-section">
+      <div className="command-week-plan-title">
+        <span>{title}</span>
+        <strong>{summary}</strong>
+      </div>
+
+      {slots.length === 0 ? (
+        <div className="command-profile-empty">{emptyText}</div>
+      ) : (
+        <div className="command-week-table-wrap">
+          <table className="command-week-table">
+            <thead>
+              <tr>
+                <th>Saat</th>
+                {PLAN_WEEKDAYS.map((weekday) => (
+                  <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {slots.map((slot) => (
+                <tr key={slot.slotIndex}>
+                  <th>{formatPlanTime(slot.startTime, slot.endTime)}</th>
+                  {PLAN_WEEKDAYS.map((weekday) => {
+                    const plan = getPlanEntry(entries, user.id, planType, weekday, slot.slotIndex);
+
+                    return <td key={weekday}>{plan?.title || "-"}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function WeeklyPlanView({
   stats,
   selectedUser,
@@ -474,8 +534,10 @@ function WeeklyPlanView({
 
   const accent = getMemberAccent(selectedStats.user.color);
   const userEntries = entries.filter((entry) => entry.user_id === selectedStats.user.id);
-  const planSlots = getPlanSlotsFromEntries(userEntries);
-  const filledCount = userEntries.filter((entry) => entry.title.trim()).length;
+  const lessonEntries = userEntries.filter((entry) => getProfilePlanType(entry) === "lesson");
+  const extraEntries = userEntries.filter((entry) => getProfilePlanType(entry) === "extra");
+  const lessonCount = lessonEntries.filter((entry) => entry.title.trim()).length;
+  const extraCount = extraEntries.filter((entry) => entry.title.trim()).length;
 
   return (
     <section className="command-plan-view">
@@ -523,37 +585,25 @@ function WeeklyPlanView({
           </div>
         </div>
 
-        <div className="command-week-plan-title">
-          <span>Haftalık planlama</span>
-          <strong>{filledCount === 0 ? "Plan eklenmemiş" : `${filledCount} dolu hücre`}</strong>
-        </div>
+        <PlanTable
+          title="Ders programı"
+          summary={lessonCount === 0 ? "Ders eklenmemiş" : `${lessonCount} dolu hücre`}
+          emptyText={`${selectedStats.user.name} için ders programı eklenmemiş.`}
+          planType="lesson"
+          user={selectedStats.user}
+          entries={lessonEntries}
+          includeDefaultSlots
+        />
 
-        <div className="command-week-table-wrap">
-          <table className="command-week-table">
-            <thead>
-              <tr>
-                <th>Saat</th>
-                {PLAN_WEEKDAYS.map((weekday) => (
-                  <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {planSlots.map((slot) => (
-                <tr key={slot.slotIndex}>
-                  <th>
-                    {formatPlanTime(slot.startTime, slot.endTime)}
-                  </th>
-                  {PLAN_WEEKDAYS.map((weekday) => {
-                    const plan = getPlanEntry(userEntries, selectedStats.user.id, weekday, slot.slotIndex);
-
-                    return <td key={weekday}>{plan?.title || "-"}</td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PlanTable
+          title="Ekstra planlar"
+          summary={extraCount === 0 ? "Ekstra plan yok" : `${extraCount} dolu hücre`}
+          emptyText={`${selectedStats.user.name} için ekstra plan eklenmemiş.`}
+          planType="extra"
+          user={selectedStats.user}
+          entries={extraEntries}
+          includeDefaultSlots={false}
+        />
       </article>
     </section>
   );

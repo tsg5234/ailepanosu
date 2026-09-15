@@ -11,8 +11,10 @@ import { getDateKey, isTaskCompleted, isTaskScheduledForDate, TIME_BLOCK_LABELS,
 import {
   DEFAULT_PLAN_SLOTS,
   formatPlanTime,
+  getProfilePlanType,
   getPlanSlotsFromEntries,
   MAX_PLAN_SLOT_INDEX,
+  type ProfilePlanType,
   PLAN_WEEKDAYS,
   PLAN_WEEKDAY_LABELS
 } from "@/lib/profile-plan";
@@ -191,10 +193,12 @@ const TASK_TIME_BLOCK_ORDER: Record<TimeBlock, number> = {
   her_zaman: 3
 };
 
-function createEmptyProfilePlanDraft(): ProfilePlanDraft {
+function createEmptyProfilePlanDraft(planType: ProfilePlanType = "lesson"): ProfilePlanDraft {
+  const slots = planType === "lesson" ? DEFAULT_PLAN_SLOTS : [];
+
   return {
     slots: Object.fromEntries(
-      DEFAULT_PLAN_SLOTS.map((slot) => [
+      slots.map((slot) => [
         slot.slotIndex,
         {
           slotIndex: slot.slotIndex,
@@ -207,36 +211,42 @@ function createEmptyProfilePlanDraft(): ProfilePlanDraft {
     cells: Object.fromEntries(
       PLAN_WEEKDAYS.map((weekday) => [
         weekday,
-        Object.fromEntries(DEFAULT_PLAN_SLOTS.map((slot) => [slot.slotIndex, ""]))
+        Object.fromEntries(slots.map((slot) => [slot.slotIndex, ""]))
       ])
     ) as ProfilePlanDraft["cells"]
   };
 }
 
-function createProfilePlanDraft(entries: ProfilePlanEntryRecord[], userId: string) {
-  const draft = createEmptyProfilePlanDraft();
+function createProfilePlanDraft(entries: ProfilePlanEntryRecord[], userId: string, planType: ProfilePlanType) {
+  const draft = createEmptyProfilePlanDraft(planType);
+  const userEntries = entries.filter(
+    (entry) => entry.user_id === userId && getProfilePlanType(entry) === planType
+  );
 
-  getPlanSlotsFromEntries(entries.filter((entry) => entry.user_id === userId)).forEach((slot) => {
+  getPlanSlotsFromEntries(userEntries, planType === "lesson").forEach((slot) => {
     draft.slots[slot.slotIndex] = slot;
     PLAN_WEEKDAYS.forEach((weekday) => {
       draft.cells[weekday][slot.slotIndex] = draft.cells[weekday][slot.slotIndex] ?? "";
     });
   });
 
-  entries
-    .filter((entry) => entry.user_id === userId)
-    .forEach((entry) => {
-      if (draft.cells[entry.weekday]) {
-        draft.cells[entry.weekday][entry.slot_index] = entry.title;
-      }
-    });
+  userEntries.forEach((entry) => {
+    if (draft.cells[entry.weekday]) {
+      draft.cells[entry.weekday][entry.slot_index] = entry.title;
+    }
+  });
 
   return draft;
 }
 
-function buildProfilePlanPayload(userId: string, draft: ProfilePlanDraft): ProfilePlanSavePayload {
+function buildProfilePlanPayload(
+  userId: string,
+  planType: ProfilePlanType,
+  draft: ProfilePlanDraft
+): ProfilePlanSavePayload {
   return {
     userId,
+    planType,
     entries: PLAN_WEEKDAYS.flatMap((weekday) =>
       getDraftPlanSlots(draft).map((slot) => ({
         weekday,
@@ -337,6 +347,7 @@ export function ParentPanel(props: ParentPanelProps) {
   const [taskTimeFilter, setTaskTimeFilter] = useState<TaskListTimeFilter>("tum");
   const [taskUserView, setTaskUserView] = useState<string>("");
   const [planUserView, setPlanUserView] = useState<string>("");
+  const [planTypeView, setPlanTypeView] = useState<ProfilePlanType>("lesson");
   const [planDraft, setPlanDraft] = useState<ProfilePlanDraft>(() => createEmptyProfilePlanDraft());
   const [newPlanStartTime, setNewPlanStartTime] = useState("19:00");
   const [newPlanEndTime, setNewPlanEndTime] = useState("");
@@ -387,12 +398,13 @@ export function ParentPanel(props: ParentPanelProps) {
 
   useEffect(() => {
     if (!planUserView) {
-      setPlanDraft(createEmptyProfilePlanDraft());
+      setPlanDraft(createEmptyProfilePlanDraft(planTypeView));
       return;
     }
 
-    setPlanDraft(createProfilePlanDraft(data?.profilePlan ?? [], planUserView));
-  }, [data?.profilePlan, planUserView]);
+    setPlanDraft(createProfilePlanDraft(data?.profilePlan ?? [], planUserView, planTypeView));
+    setEditingPlanSlot(null);
+  }, [data?.profilePlan, planUserView, planTypeView]);
 
   useEffect(() => {
     if (!taskUserView) {
@@ -429,15 +441,21 @@ export function ParentPanel(props: ParentPanelProps) {
       ),
     [planDraft, planSlots]
   );
-  const canAddPlanSlot = planSlots.length < MAX_PLAN_SLOT_INDEX;
+  const canAddPlanSlot = planTypeView === "extra"
+    ? planSlots.length < MAX_PLAN_SLOT_INDEX - DEFAULT_PLAN_SLOTS.length
+    : false;
   const addPlanSlot = () => {
-    if (!newPlanStartTime) {
+    if (planTypeView !== "extra" || !newPlanStartTime) {
       return;
     }
 
     setPlanDraft((current) => {
       const usedIndexes = new Set(Object.keys(current.slots).map(Number));
-      const nextIndex = Array.from({ length: MAX_PLAN_SLOT_INDEX }, (_, index) => index + 1).find(
+      const extraSlotIndexes = Array.from(
+        { length: MAX_PLAN_SLOT_INDEX - DEFAULT_PLAN_SLOTS.length },
+        (_, index) => DEFAULT_PLAN_SLOTS.length + index + 1
+      );
+      const nextIndex = extraSlotIndexes.find(
         (slotIndex) => !usedIndexes.has(slotIndex)
       );
 
@@ -1341,14 +1359,33 @@ export function ParentPanel(props: ParentPanelProps) {
       </div>
 
       <Card
-        title="Haftalık plan tablosu"
+        title={planTypeView === "lesson" ? "Ders programı" : "Ekstra planlar"}
         description={
           selectedPlanUser
-            ? `${selectedPlanUser.name} için hücrelere ders, iş, izin, spor veya not yazın.`
+            ? planTypeView === "lesson"
+              ? `${selectedPlanUser.name} için haftalık ders programını yazın.`
+              : `${selectedPlanUser.name} için antrenman, maç, randevu veya özel planları yazın.`
             : "Önce profil seçin."
         }
       >
         <div className="space-y-4">
+          <div className="parent-plan-type-switch">
+            <button
+              type="button"
+              className={planTypeView === "lesson" ? "is-active" : ""}
+              onClick={() => setPlanTypeView("lesson")}
+            >
+              Ders programı
+            </button>
+            <button
+              type="button"
+              className={planTypeView === "extra" ? "is-active" : ""}
+              onClick={() => setPlanTypeView("extra")}
+            >
+              Ekstra planlar
+            </button>
+          </div>
+
           <div className="parent-plan-summary">
             <div>
               <span>Profil</span>
@@ -1360,32 +1397,34 @@ export function ParentPanel(props: ParentPanelProps) {
             </div>
           </div>
 
-          <div className="parent-plan-toolbar">
-            <label>
-              <span>Başlangıç</span>
-              <input
-                type="time"
-                value={newPlanStartTime}
-                onChange={(event) => setNewPlanStartTime(event.target.value)}
-              />
-            </label>
-            <label>
-              <span>Bitiş opsiyonel</span>
-              <input
-                type="time"
-                value={newPlanEndTime}
-                onChange={(event) => setNewPlanEndTime(event.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={addPlanSlot}
-              disabled={working || !selectedPlanUser || !canAddPlanSlot || !newPlanStartTime}
-            >
-              <Plus className="h-4 w-4" />
-              Saat ekle
-            </button>
-          </div>
+          {planTypeView === "extra" ? (
+            <div className="parent-plan-toolbar">
+              <label>
+                <span>Başlangıç</span>
+                <input
+                  type="time"
+                  value={newPlanStartTime}
+                  onChange={(event) => setNewPlanStartTime(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Bitiş opsiyonel</span>
+                <input
+                  type="time"
+                  value={newPlanEndTime}
+                  onChange={(event) => setNewPlanEndTime(event.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={addPlanSlot}
+                disabled={working || !selectedPlanUser || !canAddPlanSlot || !newPlanStartTime}
+              >
+                <Plus className="h-4 w-4" />
+                Saat ekle
+              </button>
+            </div>
+          ) : null}
 
           <div className="parent-plan-table-wrap">
             <table className="parent-plan-table">
@@ -1398,6 +1437,13 @@ export function ParentPanel(props: ParentPanelProps) {
                 </tr>
               </thead>
               <tbody>
+                {planSlots.length === 0 ? (
+                  <tr>
+                    <td colSpan={PLAN_WEEKDAYS.length + 1} className="parent-plan-empty-row">
+                      Ekstra plan için önce saat ekleyin.
+                    </td>
+                  </tr>
+                ) : null}
                 {planSlots.map((slot) => (
                   <tr key={slot.slotIndex}>
                     <th>
@@ -1464,7 +1510,7 @@ export function ParentPanel(props: ParentPanelProps) {
                           type="button"
                           className="is-danger"
                           onClick={() => removePlanSlot(slot.slotIndex)}
-                          disabled={working || planSlots.length <= 1}
+                          disabled={working || planTypeView === "lesson" || planSlots.length <= 1}
                           aria-label="Saati sil"
                           title="Saati sil"
                         >
@@ -1502,7 +1548,7 @@ export function ParentPanel(props: ParentPanelProps) {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => selectedPlanUser ? onSaveProfilePlan(buildProfilePlanPayload(selectedPlanUser.id, planDraft)) : undefined}
+              onClick={() => selectedPlanUser ? onSaveProfilePlan(buildProfilePlanPayload(selectedPlanUser.id, planTypeView, planDraft)) : undefined}
               disabled={working || !selectedPlanUser}
               className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
             >
@@ -1510,7 +1556,7 @@ export function ParentPanel(props: ParentPanelProps) {
             </button>
             <button
               type="button"
-              onClick={() => setPlanDraft(createEmptyProfilePlanDraft())}
+              onClick={() => setPlanDraft(createEmptyProfilePlanDraft(planTypeView))}
               disabled={working || !selectedPlanUser}
               className="rounded-[1.4rem] bg-slate-200 px-5 py-3 font-semibold text-slate-800 disabled:opacity-60"
             >

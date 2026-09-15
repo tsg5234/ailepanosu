@@ -1061,6 +1061,7 @@ export async function saveProfilePlan(
     throw new Error("Profil bulunamadı.");
   }
 
+  const planType = payload.planType ?? "lesson";
   const entries = payload.entries
     .map((entry) => ({
       family_id: familyId,
@@ -1073,11 +1074,17 @@ export async function saveProfilePlan(
       title: entry.title.trim()
     }));
 
-  const { error: deleteError } = await supabase
+  let deleteQuery = supabase
     .from("profile_plan_entries")
     .delete()
     .eq("family_id", familyId)
     .eq("user_id", payload.userId);
+
+  deleteQuery = planType === "extra"
+    ? deleteQuery.gt("slot_index", 8)
+    : deleteQuery.lte("slot_index", 8);
+
+  const { error: deleteError } = await deleteQuery;
 
   if (deleteError) {
     if (isMissingTableError(deleteError)) {

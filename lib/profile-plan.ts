@@ -1,6 +1,9 @@
 import type { ProfilePlanEntryRecord } from "@/lib/types";
 
 export const PLAN_WEEKDAYS = ["pzt", "sal", "car", "per", "cum", "cts", "paz"] as const;
+export const PLAN_TYPES = ["lesson", "extra"] as const;
+
+export type ProfilePlanType = (typeof PLAN_TYPES)[number];
 
 export const PLAN_WEEKDAY_LABELS: Record<(typeof PLAN_WEEKDAYS)[number], string> = {
   pzt: "Pazartesi",
@@ -46,12 +49,21 @@ export function formatPlanTime(startTime: string, endTime: string) {
   return endTime ? `${startTime} - ${endTime}` : startTime;
 }
 
-export function getPlanSlotsFromEntries(entries: ProfilePlanEntryRecord[]): PlanSlotDefinition[] {
+export function getProfilePlanType(entry: ProfilePlanEntryRecord): ProfilePlanType {
+  return entry.plan_type === "extra" || entry.slot_index > DEFAULT_PLAN_SLOTS.length ? "extra" : "lesson";
+}
+
+export function getPlanSlotsFromEntries(
+  entries: ProfilePlanEntryRecord[],
+  includeDefaultSlots = true
+): PlanSlotDefinition[] {
   const slots = new Map<number, PlanSlotDefinition>();
 
-  DEFAULT_PLAN_SLOTS.forEach((slot) => {
-    slots.set(slot.slotIndex, { ...slot });
-  });
+  if (includeDefaultSlots) {
+    DEFAULT_PLAN_SLOTS.forEach((slot) => {
+      slots.set(slot.slotIndex, { ...slot });
+    });
+  }
 
   entries.forEach((entry) => {
     slots.set(entry.slot_index, {
@@ -72,12 +84,14 @@ export function getPlanSlotsFromEntries(entries: ProfilePlanEntryRecord[]): Plan
 export function getPlanEntry(
   entries: ProfilePlanEntryRecord[],
   userId: string,
+  planType: ProfilePlanType,
   weekday: string,
   slotIndex: number
 ) {
   return entries.find(
     (entry) =>
       entry.user_id === userId &&
+      getProfilePlanType(entry) === planType &&
       entry.weekday === weekday &&
       entry.slot_index === slotIndex
   );

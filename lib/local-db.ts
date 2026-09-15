@@ -529,6 +529,7 @@ export async function saveLocalProfilePlan(
   }
 
   const createdAt = nowIso();
+  const planType = payload.planType ?? "lesson";
   const nextEntries = payload.entries
     .map((entry) => ({
       id: randomUUID(),
@@ -544,7 +545,11 @@ export async function saveLocalProfilePlan(
     }));
 
   familyState.profilePlan = [
-    ...(familyState.profilePlan ?? []).filter((entry) => entry.user_id !== payload.userId),
+    ...(familyState.profilePlan ?? []).filter(
+      (entry) =>
+        entry.user_id !== payload.userId ||
+        (planType === "extra" ? entry.slot_index <= 8 : entry.slot_index > 8)
+    ),
     ...nextEntries
   ];
   persistState();

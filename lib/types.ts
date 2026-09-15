@@ -47,6 +47,7 @@ export interface ProfilePlanEntryRecord {
   id: string;
   family_id: string;
   user_id: string;
+  plan_type?: "lesson" | "extra";
   weekday: string;
   slot_index: number;
   slot_label: string;
@@ -183,6 +184,7 @@ export interface TaskFormPayload {
 
 export interface ProfilePlanSavePayload {
   userId: string;
+  planType?: "lesson" | "extra";
   entries: Array<{
     weekday: string;
     slotIndex: number;

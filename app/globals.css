@@ -4648,6 +4648,37 @@ button {
   background: rgba(251, 146, 60, 0.14);
 }
 
+.parent-plan-table .parent-plan-empty-row {
+  background: rgba(255, 254, 249, 0.86);
+  padding: 1.4rem;
+  color: #6e746b;
+  font-weight: 850;
+}
+
+.parent-plan-type-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  gap: 0.35rem;
+  width: min(100%, 24rem);
+  border: 1px solid rgba(21, 23, 18, 0.12);
+  background: rgba(21, 23, 18, 0.05);
+  padding: 0.3rem;
+}
+
+.parent-plan-type-switch button {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.72rem 0.9rem;
+  color: #5f675c;
+  font-weight: 950;
+}
+
+.parent-plan-type-switch button.is-active {
+  border-color: rgba(21, 23, 18, 0.14);
+  background: #151712;
+  color: #fffef9;
+}
+
 .parent-plan-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
