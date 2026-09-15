@@ -518,6 +518,39 @@ function PlanTable({
   );
 }
 
+function ExtraPlanList({
+  entries,
+  emptyText
+}: {
+  entries: ProfilePlanEntryRecord[];
+  emptyText: string;
+}) {
+  const items = entries
+    .filter((entry) => entry.title.trim())
+    .sort((left, right) =>
+      PLAN_WEEKDAYS.indexOf(left.weekday as PlanWeekday) - PLAN_WEEKDAYS.indexOf(right.weekday as PlanWeekday) ||
+      left.start_time.localeCompare(right.start_time)
+    );
+
+  if (items.length === 0) {
+    return <div className="command-profile-empty">{emptyText}</div>;
+  }
+
+  return (
+    <div className="command-extra-list">
+      {items.map((entry) => (
+        <article key={entry.id} className="command-extra-item">
+          <time>{formatPlanTime(entry.start_time, entry.end_time)}</time>
+          <div>
+            <strong>{entry.title}</strong>
+            <span>{PLAN_WEEKDAY_LABELS[entry.weekday as PlanWeekday] ?? entry.weekday}</span>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function WeeklyPlanView({
   stats,
   selectedUser,
@@ -545,12 +578,18 @@ function WeeklyPlanView({
 
   return (
     <section className="command-plan-view">
-      <div className="command-profiles-list">
-        <div className="command-section-heading">
-          <span>Planlama</span>
-          <strong>Profil seç</strong>
-        </div>
-        <div className="command-profile-cards">
+      <article className="command-week-plan" style={{ "--member-accent": accent } as CSSProperties}>
+        <header className="command-plan-head">
+          <div className="command-plan-title">
+            <span className="command-profile-detail-avatar">
+              <AvatarDisplay avatar={selectedStats.user.avatar} name={selectedStats.user.name} />
+            </span>
+            <div>
+              <span>Planlama</span>
+              <h2>{selectedStats.user.name}</h2>
+            </div>
+          </div>
+          <div className="command-plan-tabs" aria-label="Profil seç">
           {stats.map((item) => {
             const itemAccent = getMemberAccent(item.user.color);
             const selected = item.user.id === selectedStats.user.id;
@@ -562,54 +601,44 @@ function WeeklyPlanView({
               <button
                 key={item.user.id}
                 type="button"
-                className={`command-profile-card ${selected ? "is-selected" : ""}`}
+                className={selected ? "is-selected" : ""}
                 style={{ "--member-accent": itemAccent } as CSSProperties}
                 onClick={() => onSelect(item.user.id)}
               >
-                <span className="command-profile-card-avatar">
+                <span>
                   <AvatarDisplay avatar={item.user.avatar} name={item.user.name} />
                 </span>
-                <span className="command-profile-card-copy">
-                  <strong>{item.user.name}</strong>
-                  <em>{itemFilledCount} plan</em>
-                </span>
+                <strong>{item.user.name}</strong>
+                <em>{itemFilledCount}</em>
               </button>
             );
           })}
-        </div>
-      </div>
-
-      <article className="command-week-plan" style={{ "--member-accent": accent } as CSSProperties}>
-        <div className="command-profile-detail-head">
-          <div className="command-profile-detail-avatar">
-            <AvatarDisplay avatar={selectedStats.user.avatar} name={selectedStats.user.name} />
           </div>
-          <div className="command-profile-detail-title">
-            <h2>{selectedStats.user.name}</h2>
-          </div>
+        </header>
+
+        <div className="command-plan-board">
+          <PlanTable
+            title="Ders programı"
+            summary={lessonCount === 0 ? "Ders eklenmemiş" : `${lessonCount} dolu hücre`}
+            emptyText={`${selectedStats.user.name} için ders programı eklenmemiş.`}
+            planType="lesson"
+            user={selectedStats.user}
+            entries={lessonEntries}
+            includeDefaultSlots
+            weekdays={lessonWeekdays}
+          />
+
+          <aside className="command-extra-panel">
+            <div className="command-week-plan-title">
+              <span>Ekstra planlar</span>
+              <strong>{extraCount === 0 ? "Yok" : `${extraCount} plan`}</strong>
+            </div>
+            <ExtraPlanList
+              entries={extraEntries}
+              emptyText={`${selectedStats.user.name} için ekstra plan eklenmemiş.`}
+            />
+          </aside>
         </div>
-
-        <PlanTable
-          title="Ders programı"
-          summary={lessonCount === 0 ? "Ders eklenmemiş" : `${lessonCount} dolu hücre`}
-          emptyText={`${selectedStats.user.name} için ders programı eklenmemiş.`}
-          planType="lesson"
-          user={selectedStats.user}
-          entries={lessonEntries}
-          includeDefaultSlots
-          weekdays={lessonWeekdays}
-        />
-
-        <PlanTable
-          title="Ekstra planlar"
-          summary={extraCount === 0 ? "Ekstra plan yok" : `${extraCount} dolu hücre`}
-          emptyText={`${selectedStats.user.name} için ekstra plan eklenmemiş.`}
-          planType="extra"
-          user={selectedStats.user}
-          entries={extraEntries}
-          includeDefaultSlots={false}
-          weekdays={PLAN_WEEKDAYS}
-        />
       </article>
     </section>
   );
