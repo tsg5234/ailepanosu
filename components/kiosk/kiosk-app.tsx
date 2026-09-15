@@ -31,8 +31,9 @@ import { ParentPanel } from "@/components/kiosk/parent-panel";
 import { PinModal } from "@/components/kiosk/pin-modal";
 import { SetupScreen } from "@/components/kiosk/setup-screen";
 import {
-  DEFAULT_PLAN_SLOTS,
+  formatPlanTime,
   getPlanEntry,
+  getPlanSlotsFromEntries,
   PLAN_WEEKDAYS,
   PLAN_WEEKDAY_LABELS
 } from "@/lib/profile-plan";
@@ -473,6 +474,7 @@ function WeeklyPlanView({
 
   const accent = getMemberAccent(selectedStats.user.color);
   const userEntries = entries.filter((entry) => entry.user_id === selectedStats.user.id);
+  const planSlots = getPlanSlotsFromEntries(userEntries);
   const filledCount = userEntries.filter((entry) => entry.title.trim()).length;
 
   return (
@@ -537,12 +539,10 @@ function WeeklyPlanView({
               </tr>
             </thead>
             <tbody>
-              {DEFAULT_PLAN_SLOTS.map((slot) => (
+              {planSlots.map((slot) => (
                 <tr key={slot.slotIndex}>
                   <th>
-                    {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.start_time || slot.startTime}
-                    {" - "}
-                    {userEntries.find((entry) => entry.slot_index === slot.slotIndex)?.end_time || slot.endTime}
+                    {formatPlanTime(slot.startTime, slot.endTime)}
                   </th>
                   {PLAN_WEEKDAYS.map((weekday) => {
                     const plan = getPlanEntry(userEntries, selectedStats.user.id, weekday, slot.slotIndex);

@@ -1,11 +1,10 @@
 import { requireParentSession } from "@/lib/auth";
 import { getDashboardSnapshot, saveProfilePlan } from "@/lib/db";
 import { jsonError, jsonOk } from "@/lib/http";
-import { DEFAULT_PLAN_SLOTS, PLAN_WEEKDAYS } from "@/lib/profile-plan";
+import { MAX_PLAN_SLOT_INDEX, PLAN_WEEKDAYS } from "@/lib/profile-plan";
 import type { ProfilePlanSavePayload } from "@/lib/types";
 
 const weekdaySet = new Set<string>(PLAN_WEEKDAYS);
-const slotIndexes = new Set<number>(DEFAULT_PLAN_SLOTS.map((slot) => slot.slotIndex));
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
 
 export async function POST(request: Request) {
@@ -33,9 +32,11 @@ export async function POST(request: Request) {
     const invalidEntry = entries.find(
       (entry) =>
         !weekdaySet.has(entry.weekday) ||
-        !slotIndexes.has(entry.slotIndex) ||
+        !Number.isInteger(entry.slotIndex) ||
+        entry.slotIndex < 1 ||
+        entry.slotIndex > MAX_PLAN_SLOT_INDEX ||
         !TIME_PATTERN.test(entry.startTime) ||
-        !TIME_PATTERN.test(entry.endTime)
+        (entry.endTime !== "" && !TIME_PATTERN.test(entry.endTime))
     );
 
     if (invalidEntry) {

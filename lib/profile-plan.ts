@@ -33,6 +33,42 @@ export const DEFAULT_PLAN_SLOTS = [
   { slotIndex: 8, label: "", startTime: "15:05", endTime: "15:45" }
 ] as const;
 
+export const MAX_PLAN_SLOT_INDEX = 12;
+
+export type PlanSlotDefinition = {
+  slotIndex: number;
+  label: string;
+  startTime: string;
+  endTime: string;
+};
+
+export function formatPlanTime(startTime: string, endTime: string) {
+  return endTime ? `${startTime} - ${endTime}` : startTime;
+}
+
+export function getPlanSlotsFromEntries(entries: ProfilePlanEntryRecord[]): PlanSlotDefinition[] {
+  const slots = new Map<number, PlanSlotDefinition>();
+
+  DEFAULT_PLAN_SLOTS.forEach((slot) => {
+    slots.set(slot.slotIndex, { ...slot });
+  });
+
+  entries.forEach((entry) => {
+    slots.set(entry.slot_index, {
+      slotIndex: entry.slot_index,
+      label: entry.slot_label,
+      startTime: entry.start_time,
+      endTime: entry.end_time
+    });
+  });
+
+  return Array.from(slots.values()).sort((left, right) => {
+    const leftTime = left.startTime || "99:99";
+    const rightTime = right.startTime || "99:99";
+    return leftTime.localeCompare(rightTime) || left.slotIndex - right.slotIndex;
+  });
+}
+
 export function getPlanEntry(
   entries: ProfilePlanEntryRecord[],
   userId: string,

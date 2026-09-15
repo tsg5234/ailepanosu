@@ -4405,7 +4405,7 @@ button {
 
 .command-week-table {
   width: 100%;
-  min-width: 62rem;
+  min-width: 66rem;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -4456,10 +4456,11 @@ button {
 }
 
 .command-week-table tbody th {
-  width: 8rem;
+  width: 10.5rem;
   background: #f3f4f6;
   color: #151712;
   font-weight: 950;
+  white-space: nowrap;
 }
 
 .command-week-table tbody th span,
@@ -4562,7 +4563,7 @@ button {
 
 .parent-plan-table {
   width: 100%;
-  min-width: 56rem;
+  min-width: 74rem;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -4613,7 +4614,7 @@ button {
 }
 
 .parent-plan-table tbody th {
-  width: 8rem;
+  width: 14rem;
   background: #f3f4f6;
   color: #151712;
   font-weight: 950;
@@ -4679,7 +4680,44 @@ button {
   font-weight: 950;
 }
 
-.parent-plan-row-input,
+.parent-plan-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.parent-plan-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(21, 23, 18, 0.14);
+  background: #151712;
+  padding: 0.72rem 1rem;
+  color: #fffef9;
+  font-weight: 900;
+}
+
+.parent-plan-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.parent-plan-toolbar span {
+  color: #6e746b;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.parent-plan-time-preview {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #151712;
+  font-size: 0.96rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
 .parent-plan-input {
   width: 100%;
   min-width: 0;
@@ -4691,28 +4729,51 @@ button {
   text-align: center;
 }
 
-.parent-plan-row-input {
-  background: rgba(255, 254, 249, 0.94);
-}
-
 .parent-plan-time-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
-  margin-top: 0.35rem;
+  gap: 0.45rem;
+}
+
+.parent-plan-time-fields label {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.parent-plan-time-fields label span {
+  color: #6e746b;
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .parent-plan-time-fields input {
   width: 100%;
   border: 1px solid rgba(21, 23, 18, 0.1);
   background: rgba(255, 254, 249, 0.78);
-  padding: 0.42rem 0.3rem;
+  padding: 0.48rem 0.38rem;
   color: #5f675c;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 850;
 }
 
-.parent-plan-row-input:focus,
+.parent-plan-remove-row {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  margin: 0.55rem auto 0;
+  place-items: center;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  background: rgba(254, 242, 242, 0.78);
+  color: #b91c1c;
+}
+
+.parent-plan-remove-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
 .parent-plan-input:focus,
 .parent-plan-time-fields input:focus {
   outline: 2px solid rgba(20, 184, 166, 0.35);

@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, History, Pencil, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, History, Pencil, Plus, Settings2, ShieldCheck, Trash2, Users, Wallet, X } from "lucide-react";
 import { AvatarDisplay } from "@/components/kiosk/avatar-display";
 import { AvatarPicker } from "@/components/kiosk/avatar-picker";
 import { formatAllowance } from "@/lib/allowance";
@@ -10,6 +10,9 @@ import { getDefaultAvatar, normalizeAvatarForRole } from "@/lib/avatar";
 import { getDateKey, isTaskCompleted, isTaskScheduledForDate, TIME_BLOCK_LABELS, WEEKDAY_KEYS, WEEKDAY_LABELS } from "@/lib/schedule";
 import {
   DEFAULT_PLAN_SLOTS,
+  formatPlanTime,
+  getPlanSlotsFromEntries,
+  MAX_PLAN_SLOT_INDEX,
   PLAN_WEEKDAYS,
   PLAN_WEEKDAY_LABELS
 } from "@/lib/profile-plan";
@@ -150,11 +153,20 @@ const WEEKDAY_PRESETS = [
 type TaskListTimeFilter = "tum" | TimeBlock;
 interface ProfilePlanDraft {
   slots: Record<number, {
+    slotIndex: number;
     label: string;
     startTime: string;
     endTime: string;
   }>;
   cells: Record<string, Record<number, string>>;
+}
+
+function getDraftPlanSlots(draft: ProfilePlanDraft) {
+  return Object.values(draft.slots).sort((left, right) => {
+    const leftTime = left.startTime || "99:99";
+    const rightTime = right.startTime || "99:99";
+    return leftTime.localeCompare(rightTime) || left.slotIndex - right.slotIndex;
+  });
 }
 
 const POINT_ADD_PRESETS = [10, 20, 50, 100, 200];
@@ -185,6 +197,7 @@ function createEmptyProfilePlanDraft(): ProfilePlanDraft {
       DEFAULT_PLAN_SLOTS.map((slot) => [
         slot.slotIndex,
         {
+          slotIndex: slot.slotIndex,
           label: slot.label,
           startTime: slot.startTime,
           endTime: slot.endTime
@@ -203,17 +216,16 @@ function createEmptyProfilePlanDraft(): ProfilePlanDraft {
 function createProfilePlanDraft(entries: ProfilePlanEntryRecord[], userId: string) {
   const draft = createEmptyProfilePlanDraft();
 
+  getPlanSlotsFromEntries(entries.filter((entry) => entry.user_id === userId)).forEach((slot) => {
+    draft.slots[slot.slotIndex] = slot;
+    PLAN_WEEKDAYS.forEach((weekday) => {
+      draft.cells[weekday][slot.slotIndex] = draft.cells[weekday][slot.slotIndex] ?? "";
+    });
+  });
+
   entries
     .filter((entry) => entry.user_id === userId)
     .forEach((entry) => {
-      if (draft.slots[entry.slot_index]) {
-        draft.slots[entry.slot_index] = {
-          label: entry.slot_label,
-          startTime: entry.start_time,
-          endTime: entry.end_time
-        };
-      }
-
       if (draft.cells[entry.weekday]) {
         draft.cells[entry.weekday][entry.slot_index] = entry.title;
       }
@@ -226,12 +238,12 @@ function buildProfilePlanPayload(userId: string, draft: ProfilePlanDraft): Profi
   return {
     userId,
     entries: PLAN_WEEKDAYS.flatMap((weekday) =>
-      DEFAULT_PLAN_SLOTS.map((slot) => ({
+      getDraftPlanSlots(draft).map((slot) => ({
         weekday,
         slotIndex: slot.slotIndex,
         slotLabel: draft.slots[slot.slotIndex]?.label.trim() || slot.label,
-        startTime: draft.slots[slot.slotIndex]?.startTime || slot.startTime,
-        endTime: draft.slots[slot.slotIndex]?.endTime || slot.endTime,
+        startTime: draft.slots[slot.slotIndex]?.startTime || "00:00",
+        endTime: draft.slots[slot.slotIndex]?.endTime || "",
         title: draft.cells[weekday]?.[slot.slotIndex]?.trim() ?? ""
       }))
     )
@@ -403,16 +415,74 @@ export function ParentPanel(props: ParentPanelProps) {
   const taskUsers = data?.users ?? [];
   const selectedTaskUser = taskUserView ? userLookup[taskUserView] : undefined;
   const selectedPlanUser = planUserView ? userLookup[planUserView] : undefined;
+  const planSlots = useMemo(() => getDraftPlanSlots(planDraft), [planDraft]);
   const selectedPlanCount = useMemo(
     () =>
-      DEFAULT_PLAN_SLOTS.reduce(
+      planSlots.reduce(
         (total, slot) =>
           total +
           PLAN_WEEKDAYS.filter((weekday) => planDraft.cells[weekday]?.[slot.slotIndex]?.trim()).length,
         0
       ),
-    [planDraft]
+    [planDraft, planSlots]
   );
+  const canAddPlanSlot = planSlots.length < MAX_PLAN_SLOT_INDEX;
+  const addPlanSlot = () => {
+    setPlanDraft((current) => {
+      const usedIndexes = new Set(Object.keys(current.slots).map(Number));
+      const nextIndex = Array.from({ length: MAX_PLAN_SLOT_INDEX }, (_, index) => index + 1).find(
+        (slotIndex) => !usedIndexes.has(slotIndex)
+      );
+
+      if (!nextIndex) {
+        return current;
+      }
+
+      const nextHour = String(Math.min(23, 18 + nextIndex - DEFAULT_PLAN_SLOTS.length)).padStart(2, "0");
+
+      return {
+        slots: {
+          ...current.slots,
+          [nextIndex]: {
+            slotIndex: nextIndex,
+            label: "",
+            startTime: `${nextHour}:00`,
+            endTime: ""
+          }
+        },
+        cells: Object.fromEntries(
+          PLAN_WEEKDAYS.map((weekday) => [
+            weekday,
+            {
+              ...current.cells[weekday],
+              [nextIndex]: ""
+            }
+          ])
+        ) as ProfilePlanDraft["cells"]
+      };
+    });
+  };
+  const removePlanSlot = (slotIndex: number) => {
+    setPlanDraft((current) => {
+      if (Object.keys(current.slots).length <= 1) {
+        return current;
+      }
+
+      return {
+        slots: Object.fromEntries(
+          Object.entries(current.slots).filter(([key]) => Number(key) !== slotIndex)
+        ) as ProfilePlanDraft["slots"],
+        cells: Object.fromEntries(
+          PLAN_WEEKDAYS.map((weekday) => {
+            const weekdayCells = Object.fromEntries(
+              Object.entries(current.cells[weekday]).filter(([key]) => Number(key) !== slotIndex)
+            );
+            return [weekday, weekdayCells];
+          })
+        ) as ProfilePlanDraft["cells"]
+      };
+    });
+  };
   const filteredTasks = useMemo(() => {
     const searchTerm = taskSearch.trim().toLocaleLowerCase("tr-TR");
     return (data?.tasks ?? [])
@@ -1282,6 +1352,18 @@ export function ParentPanel(props: ParentPanelProps) {
             </div>
           </div>
 
+          <div className="parent-plan-toolbar">
+            <button
+              type="button"
+              onClick={addPlanSlot}
+              disabled={working || !selectedPlanUser || !canAddPlanSlot}
+            >
+              <Plus className="h-4 w-4" />
+              Saat ekle
+            </button>
+            <span>Tek saat için bitişi boş bırakın.</span>
+          </div>
+
           <div className="parent-plan-table-wrap">
             <table className="parent-plan-table">
               <thead>
@@ -1293,45 +1375,67 @@ export function ParentPanel(props: ParentPanelProps) {
                 </tr>
               </thead>
               <tbody>
-                {DEFAULT_PLAN_SLOTS.map((slot) => (
+                {planSlots.map((slot) => (
                   <tr key={slot.slotIndex}>
                     <th>
+                      <span className="parent-plan-time-preview">
+                        {formatPlanTime(
+                          planDraft.slots[slot.slotIndex]?.startTime || slot.startTime || "--:--",
+                          planDraft.slots[slot.slotIndex]?.endTime || ""
+                        )}
+                      </span>
                       <div className="parent-plan-time-fields">
-                        <input
-                          type="time"
-                          value={planDraft.slots[slot.slotIndex]?.startTime ?? slot.startTime}
-                          onChange={(event) =>
-                            setPlanDraft((current) => ({
-                              ...current,
-                              slots: {
-                                ...current.slots,
-                                [slot.slotIndex]: {
-                                  ...(current.slots[slot.slotIndex] ?? slot),
-                                  startTime: event.target.value
+                        <label>
+                          <span>Başlangıç</span>
+                          <input
+                            type="time"
+                            value={planDraft.slots[slot.slotIndex]?.startTime ?? slot.startTime}
+                            onChange={(event) =>
+                              setPlanDraft((current) => ({
+                                ...current,
+                                slots: {
+                                  ...current.slots,
+                                  [slot.slotIndex]: {
+                                    ...(current.slots[slot.slotIndex] ?? slot),
+                                    startTime: event.target.value
+                                  }
                                 }
-                              }
-                            }))
-                          }
-                          aria-label="Başlangıç saati"
-                        />
-                        <input
-                          type="time"
-                          value={planDraft.slots[slot.slotIndex]?.endTime ?? slot.endTime}
-                          onChange={(event) =>
-                            setPlanDraft((current) => ({
-                              ...current,
-                              slots: {
-                                ...current.slots,
-                                [slot.slotIndex]: {
-                                  ...(current.slots[slot.slotIndex] ?? slot),
-                                  endTime: event.target.value
+                              }))
+                            }
+                            aria-label="Başlangıç saati"
+                          />
+                        </label>
+                        <label>
+                          <span>Bitiş</span>
+                          <input
+                            type="time"
+                            value={planDraft.slots[slot.slotIndex]?.endTime ?? slot.endTime}
+                            onChange={(event) =>
+                              setPlanDraft((current) => ({
+                                ...current,
+                                slots: {
+                                  ...current.slots,
+                                  [slot.slotIndex]: {
+                                    ...(current.slots[slot.slotIndex] ?? slot),
+                                    endTime: event.target.value
+                                  }
                                 }
-                              }
-                            }))
-                          }
-                          aria-label="Bitiş saati"
-                        />
+                              }))
+                            }
+                            aria-label="Bitiş saati"
+                          />
+                        </label>
                       </div>
+                      <button
+                        type="button"
+                        className="parent-plan-remove-row"
+                        onClick={() => removePlanSlot(slot.slotIndex)}
+                        disabled={working || planSlots.length <= 1}
+                        aria-label="Saati sil"
+                        title="Saati sil"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </th>
                     {PLAN_WEEKDAYS.map((weekday) => (
                       <td key={weekday}>
