@@ -4090,9 +4090,9 @@ button {
 .command-profiles-view,
 .command-plan-view {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.72fr) minmax(32rem, 1.8fr);
-  gap: 1rem;
-  padding-top: 1rem;
+  grid-template-columns: minmax(14rem, 0.45fr) minmax(36rem, 2fr);
+  gap: 0.75rem;
+  padding-top: 0.65rem;
 }
 
 .command-profiles-list,
@@ -4100,7 +4100,7 @@ button {
 .command-week-plan {
   border: 1px solid var(--command-line);
   background: rgba(255, 254, 249, 0.78);
-  padding: 1rem;
+  padding: 0.8rem;
 }
 
 .command-profile-cards {
@@ -4111,12 +4111,12 @@ button {
 .command-profile-card {
   --member-accent: #2563eb;
   display: grid;
-  grid-template-columns: 4.4rem minmax(0, 1fr) 2.7rem;
+  grid-template-columns: 3.2rem minmax(0, 1fr) 2.2rem;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.65rem;
   border: 1px solid transparent;
   background: rgba(255, 254, 249, 0.72);
-  padding: 0.8rem;
+  padding: 0.62rem;
   text-align: left;
   transition: 160ms ease;
 }
@@ -4143,9 +4143,9 @@ button {
 }
 
 .command-profile-card-avatar {
-  width: 4.4rem;
-  height: 4.4rem;
-  font-size: 2.45rem;
+  width: 3.2rem;
+  height: 3.2rem;
+  font-size: 1.9rem;
 }
 
 .command-profile-card-copy {
@@ -4158,7 +4158,7 @@ button {
 .command-profile-card-copy strong {
   overflow: hidden;
   color: var(--command-ink);
-  font-size: 1.05rem;
+  font-size: 0.96rem;
   font-weight: 950;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4199,9 +4199,9 @@ button {
 .command-profile-detail-head {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.72rem;
   border-bottom: 1px solid var(--command-line);
-  padding-bottom: 1rem;
+  padding-bottom: 0.58rem;
 }
 
 .command-profile-detail-title {
@@ -4212,10 +4212,10 @@ button {
 }
 
 .command-profile-detail-avatar {
-  width: 6rem;
-  height: 6rem;
+  width: 3.8rem;
+  height: 3.8rem;
   flex: 0 0 auto;
-  font-size: 3.5rem;
+  font-size: 2.35rem;
 }
 
 .command-profile-detail-head span,
@@ -4230,7 +4230,7 @@ button {
 .command-profile-detail-head h2 {
   margin: 0;
   overflow: hidden;
-  font-size: 3rem;
+  font-size: 2.05rem;
   font-weight: 950;
   line-height: 1.12;
   text-overflow: ellipsis;
@@ -4368,7 +4368,7 @@ button {
   --member-accent: var(--selected-accent);
   display: grid;
   align-content: start;
-  gap: 1rem;
+  gap: 0.65rem;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--member-accent), transparent 93%), transparent 64%),
     rgba(255, 254, 249, 0.9);
@@ -4380,7 +4380,7 @@ button {
   justify-content: space-between;
   gap: 0.75rem;
   border-top: 1px solid var(--command-line);
-  padding-top: 1rem;
+  padding-top: 0.55rem;
 }
 
 .command-week-plan-title span {
@@ -4405,16 +4405,20 @@ button {
 
 .command-week-table {
   width: 100%;
-  min-width: 66rem;
+  min-width: 54rem;
   border-collapse: collapse;
   table-layout: fixed;
+}
+
+.command-week-section.is-lesson .command-week-table {
+  min-width: 44rem;
 }
 
 .command-week-table th,
 .command-week-table td {
   border-right: 1px solid rgba(21, 23, 18, 0.12);
   border-bottom: 1px solid rgba(21, 23, 18, 0.12);
-  padding: 0.9rem 0.75rem;
+  padding: 0.55rem 0.48rem;
   text-align: center;
   vertical-align: middle;
 }
@@ -4422,7 +4426,7 @@ button {
 .command-week-table thead th {
   background: #151712;
   color: #fffef9;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 950;
 }
 
@@ -4456,7 +4460,7 @@ button {
 }
 
 .command-week-table tbody th {
-  width: 10.5rem;
+  width: 8.9rem;
   background: #f3f4f6;
   color: #151712;
   font-weight: 950;
@@ -4477,7 +4481,7 @@ button {
 
 .command-week-table td {
   color: #151712;
-  font-size: 1rem;
+  font-size: 0.86rem;
   font-weight: 950;
 }
 
@@ -4563,16 +4567,20 @@ button {
 
 .parent-plan-table {
   width: 100%;
-  min-width: 74rem;
+  min-width: 62rem;
   border-collapse: collapse;
   table-layout: fixed;
+}
+
+.parent-plan-table-wrap.is-lesson .parent-plan-table {
+  min-width: 48rem;
 }
 
 .parent-plan-table th,
 .parent-plan-table td {
   border-right: 1px solid rgba(21, 23, 18, 0.1);
   border-bottom: 1px solid rgba(21, 23, 18, 0.1);
-  padding: 0.72rem;
+  padding: 0.48rem;
   text-align: center;
   vertical-align: middle;
 }
@@ -4580,7 +4588,7 @@ button {
 .parent-plan-table thead th {
   background: #151712;
   color: #fffef9;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 950;
 }
 
@@ -4614,7 +4622,7 @@ button {
 }
 
 .parent-plan-table tbody th {
-  width: 14rem;
+  width: 10.6rem;
   background: #f3f4f6;
   color: #151712;
   font-weight: 950;
@@ -4774,7 +4782,7 @@ button {
   min-width: 0;
   border: 1px solid rgba(21, 23, 18, 0.12);
   background: rgba(255, 254, 249, 0.8);
-  padding: 0.62rem 0.7rem;
+  padding: 0.48rem 0.52rem;
   color: #151712;
   font-weight: 850;
   text-align: center;
@@ -4804,9 +4812,9 @@ button {
   width: 100%;
   border: 1px solid rgba(21, 23, 18, 0.1);
   background: rgba(255, 254, 249, 0.78);
-  padding: 0.48rem 0.38rem;
+  padding: 0.38rem 0.3rem;
   color: #5f675c;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 850;
 }
 

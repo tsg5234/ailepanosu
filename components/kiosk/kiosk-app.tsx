@@ -63,6 +63,7 @@ interface KioskAppProps {
 }
 
 type DashboardView = "home" | "tasks" | "plan";
+type PlanWeekday = (typeof PLAN_WEEKDAYS)[number];
 
 interface NavAction {
   icon: ComponentType<{ className?: string }>;
@@ -464,7 +465,8 @@ function PlanTable({
   planType,
   user,
   entries,
-  includeDefaultSlots
+  includeDefaultSlots,
+  weekdays
 }: {
   title: string;
   summary: string;
@@ -473,11 +475,12 @@ function PlanTable({
   user: UserRecord;
   entries: ProfilePlanEntryRecord[];
   includeDefaultSlots: boolean;
+  weekdays: readonly PlanWeekday[];
 }) {
   const slots = getPlanSlotsFromEntries(entries, includeDefaultSlots);
 
   return (
-    <section className="command-week-section">
+    <section className={`command-week-section is-${planType}`}>
       <div className="command-week-plan-title">
         <span>{title}</span>
         <strong>{summary}</strong>
@@ -491,7 +494,7 @@ function PlanTable({
             <thead>
               <tr>
                 <th>Saat</th>
-                {PLAN_WEEKDAYS.map((weekday) => (
+                {weekdays.map((weekday) => (
                   <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
                 ))}
               </tr>
@@ -500,7 +503,7 @@ function PlanTable({
               {slots.map((slot) => (
                 <tr key={slot.slotIndex}>
                   <th>{formatPlanTime(slot.startTime, slot.endTime)}</th>
-                  {PLAN_WEEKDAYS.map((weekday) => {
+                  {weekdays.map((weekday) => {
                     const plan = getPlanEntry(entries, user.id, planType, weekday, slot.slotIndex);
 
                     return <td key={weekday}>{plan?.title || "-"}</td>;
@@ -538,6 +541,7 @@ function WeeklyPlanView({
   const extraEntries = userEntries.filter((entry) => getProfilePlanType(entry) === "extra");
   const lessonCount = lessonEntries.filter((entry) => entry.title.trim()).length;
   const extraCount = extraEntries.filter((entry) => entry.title.trim()).length;
+  const lessonWeekdays = PLAN_WEEKDAYS.filter((weekday) => weekday !== "cts" && weekday !== "paz");
 
   return (
     <section className="command-plan-view">
@@ -593,6 +597,7 @@ function WeeklyPlanView({
           user={selectedStats.user}
           entries={lessonEntries}
           includeDefaultSlots
+          weekdays={lessonWeekdays}
         />
 
         <PlanTable
@@ -603,6 +608,7 @@ function WeeklyPlanView({
           user={selectedStats.user}
           entries={extraEntries}
           includeDefaultSlots={false}
+          weekdays={PLAN_WEEKDAYS}
         />
       </article>
     </section>

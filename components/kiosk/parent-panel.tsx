@@ -242,12 +242,13 @@ function createProfilePlanDraft(entries: ProfilePlanEntryRecord[], userId: strin
 function buildProfilePlanPayload(
   userId: string,
   planType: ProfilePlanType,
-  draft: ProfilePlanDraft
+  draft: ProfilePlanDraft,
+  weekdays: readonly (typeof PLAN_WEEKDAYS)[number][]
 ): ProfilePlanSavePayload {
   return {
     userId,
     planType,
-    entries: PLAN_WEEKDAYS.flatMap((weekday) =>
+    entries: weekdays.flatMap((weekday) =>
       getDraftPlanSlots(draft).map((slot) => ({
         weekday,
         slotIndex: slot.slotIndex,
@@ -431,15 +432,21 @@ export function ParentPanel(props: ParentPanelProps) {
   const selectedTaskUser = taskUserView ? userLookup[taskUserView] : undefined;
   const selectedPlanUser = planUserView ? userLookup[planUserView] : undefined;
   const planSlots = useMemo(() => getDraftPlanSlots(planDraft), [planDraft]);
+  const planWeekdays = useMemo(
+    () => planTypeView === "lesson"
+      ? PLAN_WEEKDAYS.filter((weekday) => weekday !== "cts" && weekday !== "paz")
+      : PLAN_WEEKDAYS,
+    [planTypeView]
+  );
   const selectedPlanCount = useMemo(
     () =>
       planSlots.reduce(
         (total, slot) =>
           total +
-          PLAN_WEEKDAYS.filter((weekday) => planDraft.cells[weekday]?.[slot.slotIndex]?.trim()).length,
+          planWeekdays.filter((weekday) => planDraft.cells[weekday]?.[slot.slotIndex]?.trim()).length,
         0
       ),
-    [planDraft, planSlots]
+    [planDraft, planSlots, planWeekdays]
   );
   const canAddPlanSlot = planTypeView === "extra"
     ? planSlots.length < MAX_PLAN_SLOT_INDEX - DEFAULT_PLAN_SLOTS.length
@@ -1426,12 +1433,12 @@ export function ParentPanel(props: ParentPanelProps) {
             </div>
           ) : null}
 
-          <div className="parent-plan-table-wrap">
+          <div className={`parent-plan-table-wrap is-${planTypeView}`}>
             <table className="parent-plan-table">
               <thead>
                 <tr>
                   <th>Saat</th>
-                  {PLAN_WEEKDAYS.map((weekday) => (
+                  {planWeekdays.map((weekday) => (
                     <th key={weekday}>{PLAN_WEEKDAY_LABELS[weekday]}</th>
                   ))}
                 </tr>
@@ -1439,7 +1446,7 @@ export function ParentPanel(props: ParentPanelProps) {
               <tbody>
                 {planSlots.length === 0 ? (
                   <tr>
-                    <td colSpan={PLAN_WEEKDAYS.length + 1} className="parent-plan-empty-row">
+                    <td colSpan={planWeekdays.length + 1} className="parent-plan-empty-row">
                       Ekstra plan için önce saat ekleyin.
                     </td>
                   </tr>
@@ -1518,7 +1525,7 @@ export function ParentPanel(props: ParentPanelProps) {
                         </button>
                       </div>
                     </th>
-                    {PLAN_WEEKDAYS.map((weekday) => (
+                    {planWeekdays.map((weekday) => (
                       <td key={weekday}>
                         <input
                           value={planDraft.cells[weekday]?.[slot.slotIndex] ?? ""}
@@ -1548,7 +1555,7 @@ export function ParentPanel(props: ParentPanelProps) {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => selectedPlanUser ? onSaveProfilePlan(buildProfilePlanPayload(selectedPlanUser.id, planTypeView, planDraft)) : undefined}
+              onClick={() => selectedPlanUser ? onSaveProfilePlan(buildProfilePlanPayload(selectedPlanUser.id, planTypeView, planDraft, planWeekdays)) : undefined}
               disabled={working || !selectedPlanUser}
               className="rounded-[1.4rem] bg-slate-950 px-5 py-3 font-semibold text-white disabled:opacity-60"
             >
