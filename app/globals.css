@@ -5252,6 +5252,7 @@ button {
 
   .command-home-grid .command-today {
     min-width: 0;
+    min-height: 0;
     padding: 0.75rem;
   }
 
@@ -5261,10 +5262,35 @@ button {
   }
 
   .command-home-grid .command-member-row {
-    grid-template-columns: 3.6rem minmax(0, 1fr) 2.45rem;
+    grid-template-columns: 3.6rem minmax(0, 1fr);
+    grid-template-areas:
+      "avatar copy"
+      "actions actions";
     min-width: 0;
     min-height: 0;
     padding: 0.65rem;
+  }
+
+  .command-home-grid .command-member-row > .command-member-avatar {
+    grid-area: avatar;
+  }
+
+  .command-home-grid .command-member-row > .command-member-copy {
+    grid-area: copy;
+  }
+
+  .command-home-grid .command-member-row > .command-member-actions {
+    grid-area: actions;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 0.15rem;
+  }
+
+  .command-home-grid .command-member-actions button {
+    min-width: 0;
+    padding: 0.58rem 0.45rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
   }
 
   .command-home-grid .command-member-avatar {
