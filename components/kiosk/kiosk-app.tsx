@@ -460,7 +460,6 @@ function ProfileTasksView({
 
 function PlanTable({
   title,
-  summary,
   emptyText,
   planType,
   user,
@@ -469,7 +468,6 @@ function PlanTable({
   weekdays
 }: {
   title: string;
-  summary: string;
   emptyText: string;
   planType: ProfilePlanType;
   user: UserRecord;
@@ -483,7 +481,6 @@ function PlanTable({
     <section className={`command-week-section is-${planType}`}>
       <div className="command-week-plan-title">
         <span>{title}</span>
-        <strong>{summary}</strong>
       </div>
 
       {slots.length === 0 ? (
@@ -572,8 +569,6 @@ function WeeklyPlanView({
   const userEntries = entries.filter((entry) => entry.user_id === selectedStats.user.id);
   const lessonEntries = userEntries.filter((entry) => getProfilePlanType(entry) === "lesson");
   const extraEntries = userEntries.filter((entry) => getProfilePlanType(entry) === "extra");
-  const lessonCount = lessonEntries.filter((entry) => entry.title.trim()).length;
-  const extraCount = extraEntries.filter((entry) => entry.title.trim()).length;
   const lessonWeekdays = PLAN_WEEKDAYS.filter((weekday) => weekday !== "cts" && weekday !== "paz");
 
   return (
@@ -593,9 +588,6 @@ function WeeklyPlanView({
           {stats.map((item) => {
             const itemAccent = getMemberAccent(item.user.color);
             const selected = item.user.id === selectedStats.user.id;
-            const itemFilledCount = entries.filter(
-              (entry) => entry.user_id === item.user.id && entry.title.trim()
-            ).length;
 
             return (
               <button
@@ -609,7 +601,6 @@ function WeeklyPlanView({
                   <AvatarDisplay avatar={item.user.avatar} name={item.user.name} />
                 </span>
                 <strong>{item.user.name}</strong>
-                <em>{itemFilledCount}</em>
               </button>
             );
           })}
@@ -619,7 +610,6 @@ function WeeklyPlanView({
         <div className="command-plan-board">
           <PlanTable
             title="Ders programı"
-            summary={lessonCount === 0 ? "Ders eklenmemiş" : `${lessonCount} dolu hücre`}
             emptyText={`${selectedStats.user.name} için ders programı eklenmemiş.`}
             planType="lesson"
             user={selectedStats.user}
@@ -631,7 +621,6 @@ function WeeklyPlanView({
           <aside className="command-extra-panel">
             <div className="command-week-plan-title">
               <span>Ekstra planlar</span>
-              <strong>{extraCount === 0 ? "Yok" : `${extraCount} plan`}</strong>
             </div>
             <ExtraPlanList
               entries={extraEntries}
